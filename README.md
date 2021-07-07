@@ -7,7 +7,7 @@ rime is an extension for `<regex>`.
 
 - [15.10 RegExp (Regular Expression) Objects - ECMA-262 (ES 3)](https://www.ecma-international.org/wp-content/uploads/ECMA-262_3rd_edition_december_1999.pdf)
 
-```ebnf
+```
 Pattern ::
     Disjunction
 
