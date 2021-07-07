@@ -6,6 +6,49 @@
 #define fn static constexpr auto
 //#define Error(msg) throw msg;
 
+namespace rime::detail {
+
+  template<typename CharT>
+  consteval auto select_literal(char cstr, wchar_t wstr, char8_t u8str, char16_t u16str, char32_t u32str) -> CharT {
+    if constexpr (std::same_as<CharT, char>) {
+      return cstr;
+    }
+    if constexpr (std::same_as<CharT, wchar_t>) {
+      return wstr;
+    }
+    if constexpr (std::same_as<CharT, char8_t>) {
+      return u8str;
+    }
+    if constexpr (std::same_as<CharT, char16_t>) {
+      return u16str;
+    }
+    if constexpr (std::same_as<CharT, char32_t>) {
+      return u32str;
+    }
+  }
+
+  template<typename CharT, std::size_t N>
+  consteval auto select_literal(const char (&cstr)[N], const wchar_t (&wstr)[N], const char8_t (&u8str)[N], const char16_t (&u16str)[N], const char32_t (&u32str)[N]) -> const CharT(&)[N] {
+    if constexpr (std::same_as<CharT, char>) {
+      return cstr;
+    }
+    if constexpr (std::same_as<CharT, wchar_t>) {
+      return wstr;
+    }
+    if constexpr (std::same_as<CharT, char8_t>) {
+      return u8str;
+    }
+    if constexpr (std::same_as<CharT, char16_t>) {
+      return u16str;
+    }
+    if constexpr (std::same_as<CharT, char32_t>) {
+      return u32str;
+    }
+  }
+}
+
+#define LITERAL(CharT, ltrl) rime::detail::select_literal<CharT>(ltrl, L ## ltrl, u8 ## ltrl, u ## ltrl, U ## ltrl)
+
 namespace rime {
 
   using std::ranges::begin;
@@ -26,47 +69,24 @@ namespace rime {
     concept regex_usable_character = std::same_as<T, char> or std::same_as<T, wchar_t>;
   }
 
-  template<typename CharT>
-  struct character_constant;
+  template<regex_usable_character CharT>
+  struct character_constant {
+    using CArray = std::basic_string_view<CharT>;
 
-  template<>
-  struct character_constant<char> {
-    using T = char;
-
-    static constexpr T backslash = '\\';
-    static constexpr T lparen = '(';
-    static constexpr T rparen = ')';
-    static constexpr T lbrace = '{';
-    static constexpr T rbrace = '}';
-    static constexpr T lbracket = '[';
-    static constexpr T rbracket = ']';
-    static constexpr T bitwise_or = '|';
-    static constexpr T question = '?';
-    static constexpr T comma = ',';
-    static constexpr T space = ' ';
-    static constexpr T quantifier_prefix_symbols[] = R"_(*+?{)_";
-    static constexpr T decimal_digits[] = "0123456789";
-    static constexpr T not_pattern_characters[] = R"_(^$\.()[]}*+?{|)_";
-  };
-
-  template<>
-  struct character_constant<wchar_t> {
-    using T = wchar_t;
-
-    static constexpr T backslash = L'\\';
-    static constexpr T lparen = L'(';
-    static constexpr T rparen = L')';
-    static constexpr T lbrace = L'{';
-    static constexpr T rbrace = L'}';
-    static constexpr T lbracket = L'[';
-    static constexpr T rbracket = L']';
-    static constexpr T bitwise_or = L'|';
-    static constexpr T question = L'?';
-    static constexpr T comma = L',';
-    static constexpr T space = L' ';
-    static constexpr T quantifier_prefix_symbols[] = LR"_(*+?{)_";
-    static constexpr T decimal_digits[] = L"0123456789";
-    static constexpr T not_pattern_characters[] = LR"++(^$\.()[]}*+?{|)++";
+    static constexpr CharT backslash = LITERAL(CharT, '\\');
+    static constexpr CharT lparen = LITERAL(CharT, '(');
+    static constexpr CharT rparen = LITERAL(CharT, ')');
+    static constexpr CharT lbrace = LITERAL(CharT, '{');
+    static constexpr CharT rbrace = LITERAL(CharT, '}');
+    static constexpr CharT lbracket = LITERAL(CharT, '[');
+    static constexpr CharT rbracket = LITERAL(CharT, ']');
+    static constexpr CharT bitwise_or = LITERAL(CharT, '|');
+    static constexpr CharT question = LITERAL(CharT, '?');
+    static constexpr CharT comma = LITERAL(CharT, ',');
+    static constexpr CharT space = LITERAL(CharT, ' ');
+    static constexpr CArray quantifier_prefix_symbols = LITERAL(CharT, R"_(*+?{)_");
+    static constexpr CArray decimal_digits = LITERAL(CharT, "0123456789");
+    static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.()[]}*+?{|)_");
   };
 
   template<std::weakly_incrementable I>
@@ -145,7 +165,7 @@ namespace rime {
 
       if (p != e) {
         // * + ? { だった時
-        if (auto t = e - 1 - 1; p == t) {
+        if (auto t = e - 1; p == t) {
           // { だった時
           consume(it);
 
@@ -254,7 +274,7 @@ namespace rime {
 
       // エラーにしない文字は後ろの方で見つかるようにしてある
       // -1しているのは、文字配列の終端が文字終端'\0'の次の位置であるため
-      if (auto t = e - 5 - 1; t <= p) {
+      if (auto t = e - 5; t <= p) {
         // * + ? { |
         return;
       } else {
@@ -282,4 +302,4 @@ namespace rime {
 }
 
 #undef fn
-//#undef Error
+#undef LITERAL
