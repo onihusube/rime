@@ -8,10 +8,15 @@
 
 namespace rime {
 
+  using std::ranges::begin;
+  using std::ranges::end;
+
+  [[noreturn]]
   void REGEX_PATERN_ERROR(const char* str) {
     throw str;
   }
 
+  [[noreturn]]
   void regex_error_unimplemented() {
     throw "Unimplemented...";
   }
@@ -41,7 +46,7 @@ namespace rime {
     static constexpr T space = ' ';
     static constexpr T quantifier_prefix_symbols[] = R"_(*+?{)_";
     static constexpr T decimal_digits[] = "0123456789";
-    static constexpr T not_pattern_characters[] = R"++(^$\.()[]}*+?{|)++";
+    static constexpr T not_pattern_characters[] = R"_(^$\.()[]}*+?{|)_";
   };
 
   template<>
@@ -63,6 +68,11 @@ namespace rime {
     static constexpr T decimal_digits[] = L"0123456789";
     static constexpr T not_pattern_characters[] = LR"++(^$\.()[]}*+?{|)++";
   };
+
+  template<std::weakly_incrementable I>
+  constexpr void consume(I& i) {
+    ++i;
+  }
 
   template<regex_usable_character CharT>
   struct patern_check {
@@ -86,7 +96,7 @@ namespace rime {
       if (it == fin) return;
 
       if (const auto c = *it; c == chars::bitwise_or) {
-        ++it;
+        consume(it);
         return disjunction(it, fin);
       } else {
         // 構文エラー？
@@ -121,7 +131,7 @@ namespace rime {
       quantifier_prefix(it, fin);
 
       if (it != fin and *it == chars::question) {
-        ++it;
+        consume(it);
       }
 
       return;
@@ -131,48 +141,93 @@ namespace rime {
       // termの呼び出しで終端チェック済
 
       const std::input_or_output_iterator auto p = std::ranges::find(chars::quantifier_prefix_symbols, *it);
-      const auto e = std::ranges::end(chars::quantifier_prefix_symbols);
+      const auto e = end(chars::quantifier_prefix_symbols);
 
       if (p != e) {
         // * + ? { だった時
-        if (auto t = e - 1; p == t) {
+        if (auto t = e - 1 - 1; p == t) {
           // { だった時
+          consume(it);
 
-          bool before_digits = true;
-          ++it;
+          bool follow_digits = false;
+
+          // 前半DecimalDigits
           while(true) {
-            if (it == end) {
+            if (it == fin) {
               // \d{0,10}のようなかっこが閉じていない
-              REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. (Example: \d{0, 10 ) )_");
+              REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
             }
 
             const auto c = *it;
-            if (before_digits and c == chars::comma) {
-              // 数字が出る前にカンマが出現
-              REGEX_PATERN_ERROR(R"_(You need a number before the ',' in the Quantifiers.)_");
-            }
-            if (c == chars::comma or c == chars::space) {
-              ++it;
-              continue;
+            if (c == chars::comma) {
+              if (not follow_digits) {
+                // 数字が現れる前にカンマが現れている
+                REGEX_PATERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{, 2}` ] )_");
+              }
+              // 後半読み取りへ
+              consume(it);
+              break;
             }
             if (c == chars::rbrace) {
-              ++it;
+              if (not follow_digits) {
+                // 数字が現れる前に閉じている
+                REGEX_PATERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
+              }
+              // 数量詞終端
+              consume(it);
               return;
             }
-
+            if (c == chars::space) {
+              // スペースは読み飛ばす
+              consume(it);
+              continue;
+            }
+            // 数字のチェック
             const bool is_digits = std::ranges::any_of(chars::decimal_digits, [c](auto ch) { return ch == c; });
             if (is_digits) {
-              before_digits = false;
-              ++it;
+              follow_digits = true;
+              consume(it);
               continue;
             }
 
-            // 数字でもカンマでもスペースでも閉じかっこでもない何か、エラー
-            REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. (Example: \d{0, 10 ) )_");
+            // それ以外の出現はエラー
+            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
+          }
+
+          // 後半DecimalDigits
+          while(true) {
+            if (it == fin) {
+              // \d{0,10}のようなかっこが閉じていない
+              REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
+            }
+
+            const auto c = *it;
+            if (c == chars::comma) {
+              // 後半にカンマはない
+              REGEX_PATERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0, 10, 2}` ] )");
+            }
+            if (c == chars::rbrace) {
+              // 数量詞終端
+              consume(it);
+              return;
+            }
+            if (c == chars::space) {
+              // スペースは読み飛ばす
+              consume(it);
+              continue;
+            }
+            // 数字のチェック
+            const bool is_digits = std::ranges::any_of(chars::decimal_digits, [c](auto ch) { return ch == c; });
+            if (is_digits) {
+              consume(it);
+              continue;
+            }
+
+            // それ以外の出現はエラー
+            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
           }
         }
-        // 消費する
-        ++it;
+        consume(it);
       }
       // * + ? { 以外は消費しないで戻る
       return;
@@ -193,12 +248,13 @@ namespace rime {
 
       if (p == e) {
         // 通常のパターン文字
-        ++it;
+        consume(it);
         return;
       }
 
       // エラーにしない文字は後ろの方で見つかるようにしてある
-      if (auto t = e - 5; t <= p) {
+      // -1しているのは、文字配列の終端が文字終端'\0'の次の位置であるため
+      if (auto t = e - 5 - 1; t <= p) {
         // * + ? { |
         return;
       } else {
