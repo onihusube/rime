@@ -84,6 +84,10 @@ namespace rime {
     static constexpr CharT question = LITERAL(CharT, '?');
     static constexpr CharT comma = LITERAL(CharT, ',');
     static constexpr CharT space = LITERAL(CharT, ' ');
+    static constexpr CharT caret = LITERAL(CharT, '^');
+    static constexpr CharT dollar = LITERAL(CharT, '$');
+    static constexpr CharT b = LITERAL(CharT, 'b');
+    static constexpr CharT B = LITERAL(CharT, 'B');
     static constexpr CArray quantifier_prefix_symbols = LITERAL(CharT, R"_(*+?{)_");
     static constexpr CArray decimal_digits = LITERAL(CharT, "0123456789");
     static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.()[]}*+?{|)_");
@@ -92,6 +96,11 @@ namespace rime {
   template<std::weakly_incrementable I>
   constexpr void consume(I& i) {
     ++i;
+  }
+
+  template<std::random_access_iterator I>
+  constexpr void consume_n(I& i, std::iter_difference_t<I> n) {
+    i += n;
   }
 
   template<regex_usable_character CharT>
@@ -133,7 +142,7 @@ namespace rime {
 
     fn term(I& it, const S fin) {
       if (assertion(it, fin) == true) {
-        regex_error_unimplemented();
+        return;
       } else {
         atom(it, fin);
 
@@ -143,8 +152,33 @@ namespace rime {
       }
     }
 
-    fn assertion(I&, const S) -> bool {
-      return false;
+    fn assertion(I& it , const S fin) -> bool {
+      const auto c = *it;
+
+      switch (c) {
+      case chars::caret: [[fallthrough]];
+      case chars::dollar:
+        consume(it);
+        return true;
+      case chars::backslash:
+        {
+          auto next = it + 1;
+          if (next == fin) {
+            // エスケープシーケンスの不正な終了
+            REGEX_PATERN_ERROR("The escape sequence is empty.");
+          }
+
+          const auto c2 = *next;
+          if (c2 == chars::b or c2 == chars::B) {
+            // \bの次まで消費
+            consume_n(it, 2);
+            return true;
+          }
+        }
+        [[fallthrough]];
+      default:
+        return false;
+      }
     }
 
     fn quantifier(I& it, const S fin) {
@@ -302,4 +336,4 @@ namespace rime {
 }
 
 #undef fn
-#undef LITERAL
+//#undef LITERAL
