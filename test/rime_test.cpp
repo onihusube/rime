@@ -40,10 +40,6 @@ int main() {
 
     // パースエラーで例外を投げる
     ut::expect(ut::throws([]{ 
-      auto pat = R"(.)"sv;
-      rime::patern_check<char>::start(pat);
-    }));
-    ut::expect(ut::throws([]{ 
       auto pat = R"_(()_"sv;
       rime::patern_check<char>::start(pat);
     }));
@@ -75,10 +71,6 @@ int main() {
     auto rstr3 = LR"_(<>,_/`@~=-!"#%&')_"_re;
 
     // パースエラーで例外を投げる
-    ut::expect(ut::throws([]{ 
-      auto pat = LR"(.)"sv;
-      rime::patern_check<wchar_t>::start(pat);
-    }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"_(()_"sv;
       rime::patern_check<wchar_t>::start(pat);
@@ -228,7 +220,42 @@ int main() {
         auto pat = R"(a{1, 2)"sv;
         rime::patern_check<char>::start(pat);
       }));
-    } 
+    }
+  };
 
+  "lookahead assertion or group"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(())_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_((?:))_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_((?=))_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_((?!))_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_((a|b))_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_((|))_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_((a|(c|d)))_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_((?:abcd))_"_re;
+    [[maybe_unused]]
+    auto rstr9 = R"_((?=0))_"_re;
+    [[maybe_unused]]
+    auto rstr10 = R"_((?!a1gf3))_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((?a))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((?1))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((?*))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
   };
 }

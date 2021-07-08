@@ -88,9 +88,13 @@ namespace rime {
     static constexpr CharT dollar = LITERAL(CharT, '$');
     static constexpr CharT b = LITERAL(CharT, 'b');
     static constexpr CharT B = LITERAL(CharT, 'B');
+    static constexpr CharT dot = LITERAL(CharT, '.');
+    static constexpr CharT equal = LITERAL(CharT, '=');
+    static constexpr CharT colon = LITERAL(CharT, ':');
+    static constexpr CharT exclamation = LITERAL(CharT, '!');
     static constexpr CArray quantifier_prefix_symbols = LITERAL(CharT, R"_(*+?{)_");
     static constexpr CArray decimal_digits = LITERAL(CharT, "0123456789");
-    static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.()[]}*+?{|)_");
+    static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.([]}*+?{|))_");
   };
 
   template<std::weakly_incrementable I>
@@ -116,10 +120,14 @@ namespace rime {
       const auto fin = patern.end();
 
       disjunction(it, fin);
+
+      if (it != fin) {
+        REGEX_PATERN_ERROR("Parse error.");
+      }
       // ここにきたらOK
     }
 
-    fn disjunction(I& it, const S fin) {
+    static constexpr void disjunction(I& it, const S fin) {
       alternative(it, fin);
 
       if (it == fin) return;
@@ -127,6 +135,9 @@ namespace rime {
       if (const auto c = *it; c == chars::bitwise_or) {
         consume(it);
         return disjunction(it, fin);
+      } else if (c == chars::rparen) {
+        // 先読みアサーションとグループ内のパース時にdisjunctionを終了する
+        return;
       } else {
         // 構文エラー？
         REGEX_PATERN_ERROR("The expected '|' did not appear.");
@@ -135,7 +146,8 @@ namespace rime {
 
     fn alternative(I& it, const S fin) {
       while (it != fin) {
-        if (const auto c = *it; c == chars::bitwise_or) return;
+        const auto c = *it;
+        if (c == chars::bitwise_or or c == chars::rparen) return;
         term(it, fin);
       }
     }
@@ -287,14 +299,35 @@ namespace rime {
       return;
     }
 
-    fn atom(I& it, const S) {
-      return pattern_character(it);
+    fn atom(I& it, const S fin) {
+      const auto c = *it;
+
+      switch (c) {
+      case chars::dot:
+        consume(it);
+        return;
+      case chars::backslash:
+        consume(it);
+        atom_escape(it, fin);
+        return;
+      case chars::lbracket:
+        consume(it);
+        character_class(it, fin);
+        return;
+      case chars::lparen:
+        consume(it);
+        lookahead_assertion_or_group(it, fin);
+        return;
+      default:
+        pattern_character(it);
+        return;
+      }
     }
 
     fn pattern_character(I& it) {
       // ^ $ \ . * + ? ( ) [ ] { } | を除いた1文字
-      // * + ? { | => 消費せずに戻る
-      // ^ $ \ . ( ) [ ] } => エラー
+      // * + ? { | ) => 消費せずに戻る
+      // ^ $ \ . ( [ ] } => エラー
       // othewise => 消費して戻る
 
       const std::input_or_output_iterator auto p = std::ranges::find(chars::not_pattern_characters, *it);
@@ -308,13 +341,53 @@ namespace rime {
 
       // エラーにしない文字は後ろの方で見つかるようにしてある
       // -1しているのは、文字配列の終端が文字終端'\0'の次の位置であるため
-      if (auto t = e - 5; t <= p) {
-        // * + ? { |
+      if (auto t = e - 6; t <= p) {
+        // * + ? { | )
         return;
       } else {
-        // ^ $ \ . ( ) [ ] }
-        REGEX_PATERN_ERROR(R"_(These symbols need escaping (one of ^ $ \ . ( ) [ ] } ).)_");
+        // ^ $ \ . ( [ ] }
+        REGEX_PATERN_ERROR(R"_(These symbols need escaping (one of ^ $ \ . ( [ ] } ).)_");
       }
+    }
+  
+    fn atom_escape(I&, const S) {
+      regex_error_unimplemented();
+    }
+
+    fn character_class(I &, const S) {
+      regex_error_unimplemented();
+    }
+
+    fn lookahead_assertion_or_group(I &it, const S fin) {
+      if (it == fin) {
+        // グループが閉じていない
+        REGEX_PATERN_ERROR("The group is not closed.");
+      }
+
+      // 先読みアサーションのチェック
+      if (const auto c = *it; c == chars::question) {
+        consume(it);
+        if (it == fin) {
+          // グループが閉じていない
+          REGEX_PATERN_ERROR("The group is not closed.");
+        }
+        const auto c2 = *it;
+        if (c2 == chars::colon or c2 == chars::equal or c2 == chars::exclamation) {
+          consume(it);
+        } else {
+          // 有効な先読みアサーションではない
+          REGEX_PATERN_ERROR("You got the wrong Lookahead Assertion.");
+        }
+      }
+
+      // グループとして一括処理
+      disjunction(it, fin);
+      if (const auto c = *it; c != chars::rparen) {
+        // グループが閉じていない
+        REGEX_PATERN_ERROR("The group is not closed.");
+      }
+      consume(it);
+      return;
     }
   };
 
