@@ -223,6 +223,28 @@ int main() {
     }
   };
 
+  "decimal escape"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(\0)_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_(\1)_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_(\9)_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_(\10)_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_(\99)_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\00))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\123))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+  };
+
   "lookahead assertion or group"_test = [] {
     [[maybe_unused]]
     auto rstr1 = R"_(())_"_re;

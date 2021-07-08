@@ -307,7 +307,6 @@ namespace rime {
         consume(it);
         return;
       case chars::backslash:
-        consume(it);
         atom_escape(it, fin);
         return;
       case chars::lbracket:
@@ -315,7 +314,6 @@ namespace rime {
         character_class(it, fin);
         return;
       case chars::lparen:
-        consume(it);
         lookahead_assertion_or_group(it, fin);
         return;
       default:
@@ -350,8 +348,47 @@ namespace rime {
       }
     }
   
-    fn atom_escape(I&, const S) {
+    fn atom_escape(I& it, const S fin) {
+      consume(it);
+      if (it == fin) {
+        // 孤立したバックスラッシュ
+        REGEX_PATERN_ERROR("The last backslash is isolated  .");
+      }
+
+      if (decimal_escape(it, fin) == true) {
+        return;
+      }
+
       regex_error_unimplemented();
+    }
+
+    fn decimal_escape(I& it, const S fin) -> bool {
+      if (const auto d1 = *it; d1 == chars::decimal_digits[0]) {
+        // \0 の時は1桁オンリー
+        consume(it);
+      } else if (std::ranges::any_of(chars::decimal_digits, [d1](auto ch) { return ch == d1; })) {
+        // \n (n != 0)の時は2桁ok
+        consume(it);
+        if (it == fin) return true;
+        if (std::ranges::any_of(chars::decimal_digits, [d2 = *it](auto ch) { return ch == d2; })) {
+          consume(it);
+        } else {
+          // 1桁数値エスケープ
+          return true;
+        }
+      } else {
+        // 数値が現れない場合は別のエスケープ文字
+        return false;
+      }
+
+      if (it == fin) return true;
+
+      // その次の文字としてDecimalDigitsが現れてはならない
+      if (std::ranges::any_of(chars::decimal_digits, [d3 = *it](auto ch) { return ch == d3; })) {
+        REGEX_PATERN_ERROR("Numeric escape is up to two digits. But, when it starts with 0, it is one digit.");
+      }
+
+      return true;
     }
 
     fn character_class(I &, const S) {
@@ -359,6 +396,7 @@ namespace rime {
     }
 
     fn lookahead_assertion_or_group(I &it, const S fin) {
+      consume(it);
       if (it == fin) {
         // グループが閉じていない
         REGEX_PATERN_ERROR("The group is not closed.");
