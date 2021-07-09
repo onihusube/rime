@@ -88,14 +88,19 @@ namespace rime {
     static constexpr CharT dollar = LITERAL(CharT, '$');
     static constexpr CharT b = LITERAL(CharT, 'b');
     static constexpr CharT B = LITERAL(CharT, 'B');
+    static constexpr CharT c = LITERAL(CharT, 'c');
+    static constexpr CharT x = LITERAL(CharT, 'x');
     static constexpr CharT dot = LITERAL(CharT, '.');
     static constexpr CharT equal = LITERAL(CharT, '=');
     static constexpr CharT colon = LITERAL(CharT, ':');
     static constexpr CharT exclamation = LITERAL(CharT, '!');
     static constexpr CArray quantifier_prefix_symbols = LITERAL(CharT, R"_(*+?{)_");
     static constexpr CArray decimal_digits = LITERAL(CharT, "0123456789");
+    static constexpr CArray hex_digits = LITERAL(CharT, "0123456789abcdefABCDEF");
     static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.([]}*+?{|))_");
     static constexpr CArray character_class_escapes = LITERAL(CharT, "dDsSwW");
+    static constexpr CArray control_escapes = LITERAL(CharT, "fnrtv");
+    static constexpr CArray control_letters = LITERAL(CharT, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
   };
 
   template<std::weakly_incrementable I>
@@ -364,10 +369,14 @@ namespace rime {
       if (decimal_escape(it, fin) == true) {
         return;
       }
+      if (character_escape(it, fin) == true) {
+        return;
+      }
       if (character_class_escape(it) == true) {
         return;
       }
 
+      // ここにきたらエラー？
       regex_error_unimplemented();
     }
 
@@ -398,6 +407,52 @@ namespace rime {
       }
 
       return true;
+    }
+
+    fn character_escape(I& it, const S fin) -> bool {
+      const auto c = *it;
+      // ControlEscape
+      if (contains(chars::control_escapes, *it)) {
+        consume(it);
+        return true;
+      }
+      // c ControlLetter
+      if (chars::c == c) {
+        consume(it);
+        if (it == fin) {
+          REGEX_PATERN_ERROR(R"_(`\c` is not a valid escape sequence.)_");
+        }
+        if (contains(chars::control_letters, *it)) {
+          consume(it);
+          return true;
+        } else {
+          REGEX_PATERN_ERROR(R"_(`\cn`(n is not character) is not a valid escape sequence.)_");
+        }
+      }
+      // HexEscapeSequence
+      if (chars::x == c) {
+        consume(it);
+        if (it == fin) {
+          REGEX_PATERN_ERROR(R"_(`\x` is not a valid escape sequence.)_");
+        }
+
+        // 16進エスケープシーケンス（\xhh）は2桁必要
+        if (not contains(chars::hex_digits, *it)) {
+          REGEX_PATERN_ERROR(R"_(`\xn`(n is not hexadecimal number) is a hexadecimal escape sequence that is not valid.)_");
+        }
+        consume(it);
+        if (it == fin) {
+          REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
+        }
+
+        if (not contains(chars::hex_digits, *it)) {
+          REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
+        }
+        consume(it);
+        return true;
+      }
+
+      return false;
     }
 
     fn character_class_escape(I& it) -> bool {

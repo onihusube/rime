@@ -258,6 +258,55 @@ int main() {
     auto rstr5 = R"_(\w)_"_re;
     [[maybe_unused]]
     auto rstr6 = R"_(\W)_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_(\f)_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_(\n)_"_re;
+    [[maybe_unused]]
+    auto rstr9 = R"_(\r)_"_re;
+    [[maybe_unused]]
+    auto rstr10 = R"_(\t)_"_re;
+    [[maybe_unused]]
+    auto rstr11 = R"_(\v)_"_re;
+  };
+  "HexEscapeSequence"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(\x00)_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_(\xff)_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_(\xFF)_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_(\xf9)_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_(\xfff)_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_(\x000)_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\x0))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\x9))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\xa))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\xf))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\xF))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\xA))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
   };
 
   "lookahead assertion or group"_test = [] {
