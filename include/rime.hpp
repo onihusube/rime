@@ -95,6 +95,7 @@ namespace rime {
     static constexpr CArray quantifier_prefix_symbols = LITERAL(CharT, R"_(*+?{)_");
     static constexpr CArray decimal_digits = LITERAL(CharT, "0123456789");
     static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.([]}*+?{|))_");
+    static constexpr CArray character_class_escapes = LITERAL(CharT, "dDsSwW");
   };
 
   template<std::weakly_incrementable I>
@@ -105,6 +106,11 @@ namespace rime {
   template<std::random_access_iterator I>
   constexpr void consume_n(I& i, std::iter_difference_t<I> n) {
     i += n;
+  }
+
+  template<std::ranges::input_range R, std::equality_comparable_with<std::ranges::range_reference_t<R>> T>
+  constexpr auto contains(R&& r, const T& value) -> bool {
+    return std::ranges::any_of(std::forward<R>(r), [&value](const auto& v) { return v == value; });
   }
 
   template<regex_usable_character CharT>
@@ -249,7 +255,7 @@ namespace rime {
               continue;
             }
             // 数字のチェック
-            const bool is_digits = std::ranges::any_of(chars::decimal_digits, [c](auto ch) { return ch == c; });
+            const bool is_digits = contains(chars::decimal_digits, c);
             if (is_digits) {
               follow_digits = true;
               consume(it);
@@ -283,7 +289,7 @@ namespace rime {
               continue;
             }
             // 数字のチェック
-            const bool is_digits = std::ranges::any_of(chars::decimal_digits, [c](auto ch) { return ch == c; });
+            const bool is_digits = contains(chars::decimal_digits, c);
             if (is_digits) {
               consume(it);
               continue;
@@ -352,10 +358,13 @@ namespace rime {
       consume(it);
       if (it == fin) {
         // 孤立したバックスラッシュ
-        REGEX_PATERN_ERROR("The last backslash is isolated  .");
+        REGEX_PATERN_ERROR("The last backslash is isolated.");
       }
 
       if (decimal_escape(it, fin) == true) {
+        return;
+      }
+      if (character_class_escape(it) == true) {
         return;
       }
 
@@ -366,11 +375,11 @@ namespace rime {
       if (const auto d1 = *it; d1 == chars::decimal_digits[0]) {
         // \0 の時は1桁オンリー
         consume(it);
-      } else if (std::ranges::any_of(chars::decimal_digits, [d1](auto ch) { return ch == d1; })) {
+      } else if (contains(chars::decimal_digits, d1)) {
         // \n (n != 0)の時は2桁ok
         consume(it);
         if (it == fin) return true;
-        if (std::ranges::any_of(chars::decimal_digits, [d2 = *it](auto ch) { return ch == d2; })) {
+        if (contains(chars::decimal_digits, *it)) {
           consume(it);
         } else {
           // 1桁数値エスケープ
@@ -384,11 +393,20 @@ namespace rime {
       if (it == fin) return true;
 
       // その次の文字としてDecimalDigitsが現れてはならない
-      if (std::ranges::any_of(chars::decimal_digits, [d3 = *it](auto ch) { return ch == d3; })) {
+      if (contains(chars::decimal_digits, *it)) {
         REGEX_PATERN_ERROR("Numeric escape is up to two digits. But, when it starts with 0, it is one digit.");
       }
 
       return true;
+    }
+
+    fn character_class_escape(I& it) -> bool {
+      if (contains(chars::character_class_escapes, *it)) {
+        consume(it);
+        return true;
+      }
+
+      return false;
     }
 
     fn character_class(I &, const S) {

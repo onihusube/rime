@@ -245,6 +245,21 @@ int main() {
     }));
   };
 
+  "character class escape"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(\d)_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_(\D)_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_(\s)_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_(\S)_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_(\w)_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_(\W)_"_re;
+  };
+
   "lookahead assertion or group"_test = [] {
     [[maybe_unused]]
     auto rstr1 = R"_(())_"_re;
