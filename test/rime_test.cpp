@@ -309,6 +309,40 @@ int main() {
     }));
   };
 
+  "unicode escape sequence"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(\u0000)_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_(\uffff)_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_(\uFFFF)_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_(\uabCd)_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_(\uf382)_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\u))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\u0))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\u0f))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\u0f2))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"((\uFED))"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+  };
+
   "lookahead assertion or group"_test = [] {
     [[maybe_unused]]
     auto rstr1 = R"_(())_"_re;

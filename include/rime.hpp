@@ -90,6 +90,7 @@ namespace rime {
     static constexpr CharT B = LITERAL(CharT, 'B');
     static constexpr CharT c = LITERAL(CharT, 'c');
     static constexpr CharT x = LITERAL(CharT, 'x');
+    static constexpr CharT u = LITERAL(CharT, 'u');
     static constexpr CharT dot = LITERAL(CharT, '.');
     static constexpr CharT equal = LITERAL(CharT, '=');
     static constexpr CharT colon = LITERAL(CharT, ':');
@@ -437,22 +438,44 @@ namespace rime {
         }
 
         // 16進エスケープシーケンス（\xhh）は2桁必要
-        if (not contains(chars::hex_digits, *it)) {
+        if (not hex_digit(it)) {
           REGEX_PATERN_ERROR(R"_(`\xn`(n is not hexadecimal number) is a hexadecimal escape sequence that is not valid.)_");
         }
-        consume(it);
         if (it == fin) {
           REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
         }
 
-        if (not contains(chars::hex_digits, *it)) {
+        if (not hex_digit(it)) {
           REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
         }
+        return true;
+      }
+      // UnicodeEscapeSequence
+      if (chars::u == c) {
         consume(it);
+        if (it == fin) {
+          REGEX_PATERN_ERROR(R"_(`\u` is not a valid escape sequence.)_");
+        }
+
+        // ユニコードエスケープシーケンスは4桁
+        for (int i = 4; i --> 0;) {
+          if (not hex_digit(it)) {
+            REGEX_PATERN_ERROR(R"_(Unicode Escape Sequence(`\uhhhh `) requires 4 hexadecimal digits.)_");
+          }
+        }
         return true;
       }
 
       return false;
+    }
+
+    fn hex_digit(I &it) -> bool {
+      if (not contains(chars::hex_digits, *it)) {
+        return false;
+      }
+
+      consume(it);
+      return true;
     }
 
     fn character_class_escape(I& it) -> bool {
