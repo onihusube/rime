@@ -322,7 +322,6 @@ namespace rime {
         atom_escape(it, fin);
         return;
       case chars::lbracket:
-        consume(it);
         character_class(it, fin);
         return;
       case chars::lparen:
@@ -378,7 +377,7 @@ namespace rime {
       }
 
       // ここにきたらエラー？
-      regex_error_unimplemented();
+      REGEX_PATERN_ERROR("There's an unknown escape sequence.");
     }
 
     fn decimal_escape(I& it, const S fin) -> bool {
@@ -418,7 +417,7 @@ namespace rime {
         return true;
       }
       // c ControlLetter
-      if (chars::c == c) {
+      if (c == chars::c) {
         consume(it);
         if (it == fin) {
           REGEX_PATERN_ERROR(R"_(`\c` is not a valid escape sequence.)_");
@@ -431,7 +430,7 @@ namespace rime {
         }
       }
       // HexEscapeSequence
-      if (chars::x == c) {
+      if (c == chars::x) {
         consume(it);
         if (it == fin) {
           REGEX_PATERN_ERROR(R"_(`\x` is not a valid escape sequence.)_");
@@ -451,21 +450,34 @@ namespace rime {
         return true;
       }
       // UnicodeEscapeSequence
-      if (chars::u == c) {
+      if (unicode_escape_seqence(it, fin) == true) {
+        return true;
+      }
+      // IdentityEscape
+      if (check_identifier_part(it, fin) == true) {
+        return true;
+      }
+
+      return false;
+    }
+    
+    fn unicode_escape_seqence(I& it, const S fin, bool should_return = false) -> bool {
+      if (*it == chars::u) {
         consume(it);
         if (it == fin) {
+          if (should_return) return false;
           REGEX_PATERN_ERROR(R"_(`\u` is not a valid escape sequence.)_");
         }
 
         // ユニコードエスケープシーケンスは4桁
         for (int i = 4; i --> 0;) {
           if (not hex_digit(it)) {
+            if (should_return) return false;
             REGEX_PATERN_ERROR(R"_(Unicode Escape Sequence(`\uhhhh `) requires 4 hexadecimal digits.)_");
           }
         }
         return true;
       }
-
       return false;
     }
 
@@ -478,6 +490,31 @@ namespace rime {
       return true;
     }
 
+    fn check_identifier_part(I& it, const S fin) -> bool {
+      const auto c = *it;
+
+      if (c == chars::backslash) {
+        auto copy_it = it;
+        if (copy_it == fin) {
+          // `\\`はここではok
+          consume(it);
+          return true;
+        }
+
+        if (not unicode_escape_seqence(copy_it, fin, true)) {
+          consume(it);
+          return true;
+        }
+
+        // ユニコードエスケープシーケンスの前に\があった時、どうする？？
+        return false;
+      }
+      // 後のところが未実装、エスケープシーケンス周りが不完全
+      //regex_error_unimplemented();
+
+      return false;
+    }
+
     fn character_class_escape(I& it) -> bool {
       if (contains(chars::character_class_escapes, *it)) {
         consume(it);
@@ -487,7 +524,12 @@ namespace rime {
       return false;
     }
 
-    fn character_class(I &, const S) {
+    fn character_class(I& it, const S fin) {
+      /*consume(it);
+      if (it == fin) {
+        // []が閉じていない
+        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+      }*/
       regex_error_unimplemented();
     }
 
