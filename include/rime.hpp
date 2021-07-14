@@ -86,6 +86,7 @@ namespace rime {
     static constexpr CharT space = LITERAL(CharT, ' ');
     static constexpr CharT caret = LITERAL(CharT, '^');
     static constexpr CharT dollar = LITERAL(CharT, '$');
+    static constexpr CharT hyphen = LITERAL(CharT, '-');
     static constexpr CharT b = LITERAL(CharT, 'b');
     static constexpr CharT B = LITERAL(CharT, 'B');
     static constexpr CharT c = LITERAL(CharT, 'c');
@@ -525,13 +526,162 @@ namespace rime {
     }
 
     fn character_class(I& it, const S fin) {
-      /*consume(it);
+      consume(it);
       if (it == fin) {
         // []が閉じていない
         REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
-      }*/
-      regex_error_unimplemented();
+      }
+      
+      if (*it == chars::caret) {
+        consume(it);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        }
+      }
+
+      class_ranges(it, fin);
+
+      if (*it == chars::rbracket) {
+        consume(it);
+        return;
+      } else {
+        // []が閉じていない
+        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+      }
     }
+
+
+    fn class_ranges(I& it, const S fin) {
+      if (*it == chars::rbracket) {
+        // 空の場合
+        return;
+      }
+
+      // NonemptyClassRanges
+      class_atom(it, fin);
+
+      if (it == fin) {
+        // []が閉じていない
+        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+      }
+      if (*it == chars::rbracket) {
+        // 空の場合
+        return;
+      }
+      if (*it == chars::hyphen) {
+        consume(it);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        }
+        if (*it == chars::rbracket) {
+          // `-]`のような感じで変に閉じている
+          REGEX_PATERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
+        }
+        class_atom(it, fin);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        }
+        class_ranges(it, fin);
+        return;
+      } else {
+        nonempty_class_ranges_nodash(it, fin);
+      }
+    }
+
+    fn nonempty_class_ranges_nodash(I& it, const S fin) {
+      if (*it == chars::hyphen) {
+        consume(it);
+        return;
+      }
+
+      class_atom_nodash(it, fin);
+
+      if (it == fin) {
+        // []が閉じていない
+        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+      }
+      if (*it == chars::rbracket) {
+        // 空の場合
+        return;
+      }
+      if (*it == chars::hyphen) {
+        consume(it);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        }
+        if (*it == chars::rbracket) {
+          REGEX_PATERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
+        }
+        class_atom(it, fin);
+
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        }
+        class_ranges(it, fin);
+      } else {
+        nonempty_class_ranges_nodash(it, fin);
+      }
+    }
+  
+    fn class_atom(I& it, const S fin) {
+      const auto c = *it;
+
+      if (c == chars::hyphen) {
+        consume(it);
+        return;
+      }
+
+      class_atom_nodash(it, fin);
+    }
+
+    fn class_atom_nodash(I& it, const S fin) {
+      const auto c = *it;
+
+      switch (c) {
+      case chars::backslash:
+        class_escape(it, fin);
+        return;
+      case chars::hyphen: [[fallthrough]];
+      case chars::rbracket:
+        REGEX_PATERN_ERROR("Unreachable");
+        break;
+      default:
+        consume(it);
+        return;
+      }
+    }
+  
+    fn class_escape(I& it, const S fin) {
+      // バックスラッシュを消費
+      consume(it);
+      if (it == fin) {
+        // []が閉じていない
+        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+      }
+
+      if (*it == chars::b) {
+        consume(it);
+        return;
+      }
+      if (decimal_escape(it, fin) == true) {
+        return;
+      }
+      if (character_escape(it, fin) == true) {
+        return;
+      }
+      if (character_class_escape(it) == true) {
+        return;
+      }
+
+      // ここにきたらエラー？
+      REGEX_PATERN_ERROR("There's an unknown escape sequence.");
+    }
+
 
     fn lookahead_assertion_or_group(I &it, const S fin) {
       consume(it);
