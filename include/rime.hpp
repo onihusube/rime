@@ -334,6 +334,39 @@ namespace rime {
       }
     }
 
+    fn lookahead_assertion_or_group(I &it, const S fin) {
+      consume(it);
+      if (it == fin) {
+        // グループが閉じていない
+        REGEX_PATERN_ERROR("The group is not closed.");
+      }
+
+      // 先読みアサーションのチェック
+      if (const auto c = *it; c == chars::question) {
+        consume(it);
+        if (it == fin) {
+          // グループが閉じていない
+          REGEX_PATERN_ERROR("The group is not closed.");
+        }
+        const auto c2 = *it;
+        if (c2 == chars::colon or c2 == chars::equal or c2 == chars::exclamation) {
+          consume(it);
+        } else {
+          // 有効な先読みアサーションではない
+          REGEX_PATERN_ERROR("You got the wrong Lookahead Assertion.");
+        }
+      }
+
+      // グループとして一括処理
+      disjunction(it, fin);
+      if (const auto c = *it; c != chars::rparen) {
+        // グループが閉じていない
+        REGEX_PATERN_ERROR("The group is not closed.");
+      }
+      consume(it);
+      return;
+    }
+
     fn pattern_character(I& it) {
       // ^ $ \ . * + ? ( ) [ ] { } | を除いた1文字
       // * + ? { | ) => 消費せずに戻る
@@ -356,7 +389,7 @@ namespace rime {
         return;
       } else {
         // ^ $ \ . ( [ ] }
-        REGEX_PATERN_ERROR(R"_(These symbols need escaping (one of ^ $ \ . ( [ ] } ).)_");
+        REGEX_PATERN_ERROR(R"_(These(any of ^ $ \ . ( [ ] } ) symbols need escaping.)_");
       }
     }
   
@@ -576,8 +609,9 @@ namespace rime {
           REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
         }
         if (*it == chars::rbracket) {
-          // `-]`のような感じで変に閉じている
-          REGEX_PATERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
+          // ClassAtom NonemptyClassRangesNoDash(ClassAtom)
+          // `[\w-]`など
+          return;
         }
         class_atom(it, fin);
         if (it == fin) {
@@ -680,40 +714,6 @@ namespace rime {
 
       // ここにきたらエラー？
       REGEX_PATERN_ERROR("There's an unknown escape sequence.");
-    }
-
-
-    fn lookahead_assertion_or_group(I &it, const S fin) {
-      consume(it);
-      if (it == fin) {
-        // グループが閉じていない
-        REGEX_PATERN_ERROR("The group is not closed.");
-      }
-
-      // 先読みアサーションのチェック
-      if (const auto c = *it; c == chars::question) {
-        consume(it);
-        if (it == fin) {
-          // グループが閉じていない
-          REGEX_PATERN_ERROR("The group is not closed.");
-        }
-        const auto c2 = *it;
-        if (c2 == chars::colon or c2 == chars::equal or c2 == chars::exclamation) {
-          consume(it);
-        } else {
-          // 有効な先読みアサーションではない
-          REGEX_PATERN_ERROR("You got the wrong Lookahead Assertion.");
-        }
-      }
-
-      // グループとして一括処理
-      disjunction(it, fin);
-      if (const auto c = *it; c != chars::rparen) {
-        // グループが閉じていない
-        REGEX_PATERN_ERROR("The group is not closed.");
-      }
-      consume(it);
-      return;
     }
   };
 

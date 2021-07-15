@@ -378,4 +378,52 @@ int main() {
       rime::patern_check<char>::start(pat);
     }));
   };
+
+  "character class"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_([])_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_([a])_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_([a-z])_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_([lmn])_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_([^a])_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_([^a-z])_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_([^lmn])_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_([a-zA-H1-9])_"_re;
+    [[maybe_unused]]
+    auto rstr9 = R"_([\w-])_"_re;
+    [[maybe_unused]]
+    auto rstr10 = R"_([^?!])_"_re;
+    [[maybe_unused]]
+    auto rstr11 = R"_([^])_"_re;
+    [[maybe_unused]]
+    auto rstr12 = R"_([--])_"_re;
+    [[maybe_unused]]
+    auto rstr13 = R"_([-------])_"_re;
+    [[maybe_unused]]
+    auto rstr14 = R"_([-abc])_"_re;
+    [[maybe_unused]]
+    auto rstr15 = R"_([-\w+])_"_re;
+    [[maybe_unused]]
+    auto rstr16 = R"_([\w\b\0\12\f\n\r\t\v\d\D\s\S\w\W])_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([)"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a-b)"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a-b0-2A-G)"sv;
+      rime::patern_check<char>::start(pat);
+    }));
+  };
 }
