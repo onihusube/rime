@@ -2,9 +2,9 @@
 
 #include <regex>
 #include <ranges>
+#include <algorithm>
 
 #define fn static constexpr auto
-//#define Error(msg) throw msg;
 
 namespace rime::detail {
 
@@ -732,7 +732,42 @@ namespace rime {
     }
   }
 
+  namespace detail {
+    template<typename CharT>
+    struct regex_patern_str {
+      std::basic_string_view<CharT> str;
+
+      template<typename T>
+        requires std::convertible_to<const T&, std::basic_string_view<CharT>>
+      consteval regex_patern_str(const T& s)
+        : str(s)
+      {
+        patern_check<CharT>::start(this->str);
+      }
+    };
+  }
+
+  [[nodiscard]]
+  inline auto regex(detail::regex_patern_str<char> patern) -> std::regex {
+    return std::basic_regex<char>(patern.str.data());
+  }
+
+  [[nodiscard]]
+  inline auto regex(detail::regex_patern_str<wchar_t> patern) -> std::wregex {
+    return std::basic_regex<wchar_t>(patern.str.data());
+  }
+
+  template<regex_usable_character CharT>
+  [[nodiscard]]
+  std::ranges::forward_range auto regex_searches(std::basic_string_view<std::type_identity_t<CharT>> input_str, const std::basic_regex<CharT>& re){
+    using namespace std::ranges;
+    using reiter_t = std::regex_iterator<iterator_t<decltype(input_str)>>;
+
+    return subrange{reiter_t{begin(input_str), end(input_str), re}, reiter_t{}};
+  }
 }
 
 #undef fn
-//#undef LITERAL
+#ifndef RIME_TEST
+#undef LITERAL
+#endif

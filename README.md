@@ -2,8 +2,119 @@
 
 rime is an extension for `<regex>`.
 
+## Overview
 
-## ECMAScript RegExp Patterns
+- Compile time regex patern check
+- Some utilities for regex
+- Header Only
+- Requires C++20 or later
+    - GCC 11.1 or later
+    - MSVC 2019 Preview latest or later
+
+## Facility
+
+### Compile time regex patern check
+
+Checks the validity of a regular expression string and raises an Compile Error if it is wrong.
+
+If there is no problem, the compiler will not say anything.
+
+※ Currently, it only supports the ECMAScript format.
+
+#### UDL
+
+Pass a string to `std::regex` using User Defined Literal (`""_re`).
+
+```cpp
+#include <iostream>
+#include "rime.hpp"
+
+using namespace rime::literals;
+
+int main() {
+  std::regex re{R"_(\d{1,)_"_re};
+}
+```
+```
+In file included from prog.cc:6:
+rime.hpp: In function 'int main()':
+prog.cc:11:17:   in 'constexpr' expansion of 'rime::literals::operator""_re(((const char*)"\\d{1,"), 5)'
+rime.hpp:724:32:   in 'constexpr' expansion of 'rime::patern_check<char>::start(std::basic_string_view<char>(str, len))'
+rime.hpp:135:18:   in 'constexpr' expansion of 'rime::patern_check<char>::disjunction(it, ((const char*)fin))'
+rime.hpp:144:18:   in 'constexpr' expansion of 'rime::patern_check<char>::alternative((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:164:13:   in 'constexpr' expansion of 'rime::patern_check<char>::term((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:175:21:   in 'constexpr' expansion of 'rime::patern_check<char>::quantifier((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:210:24:   in 'constexpr' expansion of 'rime::patern_check<char>::quantifier_prefix((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:280:33: error: call to non-'constexpr' function 'void rime::REGEX_PATERN_ERROR(const char*)'
+  280 |               REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
+      |               ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+- [[Wandbox]三へ( へ՞ਊ ՞)へ ﾊｯﾊｯ](https://wandbox.org/permlink/we21OQLZGbcMQLJi)
+
+This can be used for `wchar_t` as well.
+
+#### `std::regex` factory function
+
+Use factory function `rime::regex()` to create a `std::regex` from a string.
+
+`rime::regex()` returns `std::regex`.
+
+```cpp
+#include <iostream>
+#include "rime.hpp"
+
+using namespace rime::literals;
+
+int main() {
+  auto re = rime::regex(R"_(\d{1,)_");
+}
+```
+```
+In file included from prog.cc:3:
+rime.hpp: In function 'int main()':
+prog.cc:8:24:   in 'constexpr' expansion of 'rime::detail::regex_patern_str<char>("\\d{1,")'
+rime.hpp:745:35:   in 'constexpr' expansion of 'rime::patern_check<char>::start(((rime::detail::regex_patern_str<char>*)this)->rime::detail::regex_patern_str<char>::str)'
+rime.hpp:135:18:   in 'constexpr' expansion of 'rime::patern_check<char>::disjunction(it, ((const char*)fin))'
+rime.hpp:144:18:   in 'constexpr' expansion of 'rime::patern_check<char>::alternative((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:164:13:   in 'constexpr' expansion of 'rime::patern_check<char>::term((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:175:21:   in 'constexpr' expansion of 'rime::patern_check<char>::quantifier((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:210:24:   in 'constexpr' expansion of 'rime::patern_check<char>::quantifier_prefix((* & it), ((rime::patern_check<char>::S)fin))'
+rime.hpp:280:33: error: call to non-'constexpr' function 'void rime::REGEX_PATERN_ERROR(const char*)'
+  280 |               REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
+      |               ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+- [[Wandbox]三へ( へ՞ਊ ՞)へ ﾊｯﾊｯ](https://wandbox.org/permlink/Mz78iG2rUAmEAGfK)
+
+This can be used for `wchar_t` as well.
+
+### `rime::regex_searches()`
+
+`rime::regex_searches()` will search the input string for all substrings that match the regular expression pattern.
+
+The return value of `rime::regex_searches()` is a `range` object that represents the entire search result.
+
+```cpp
+#include <iostream>
+#include "rime.hpp"
+
+using namespace rime::literals;
+
+int main() {
+  const auto regex = rime::regex(R"(\d+)");
+
+  for (const auto &m : rime::regex_searches("1421, 34353, 7685, 12765, 976754", regex)) {
+    std::cout << m.str() << ' ';
+  }
+}
+
+// Output
+// 1421 34353 7685 12765 976754
+```
+- [[Wandbox]三へ( へ՞ਊ ՞)へ ﾊｯﾊｯ](https://wandbox.org/permlink/R9NkDCIxSg1wmcVA)
+
+This is a wrapper for `std::regex_iterator`, which does `std::regex_search` in succession.
+
+# Appendix : ECMAScript RegExp Patterns
 
 - [15.10 RegExp (Regular Expression) Objects - ECMA-262 (ES 3)](https://www.ecma-international.org/wp-content/uploads/ECMA-262_3rd_edition_december_1999.pdf)
 

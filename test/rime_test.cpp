@@ -1,3 +1,4 @@
+#define RIME_TEST 1
 #include "rime.hpp"
 #include "boost/ut.hpp"
 
@@ -425,5 +426,16 @@ int main() {
       auto pat = R"([a-b0-2A-G)"sv;
       rime::patern_check<char>::start(pat);
     }));
+  };
+
+  "regex_searches"_test = [] {
+    const auto regex = rime::regex(R"(\d+)");
+    std::string_view expects[] = {"1421", "34353", "7685", "12765", "976754"};
+
+    int i = 0;
+    for (const auto &m : rime::regex_searches("1421, 34353, 7685, 12765, 976754", regex)) {
+      ut::expect(m.str() == expects[i]) << i;
+      ++i;
+    }
   };
 }
