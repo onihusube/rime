@@ -15,7 +15,7 @@ rime is an extension for `<regex>`.
 
 ### Compile time regex pattern check
 
-Checks the validity of a regular expression string and raises an Compile Error if it is wrong.
+Checks the validity of a regular expression string and raises a Compile Error if it is wrong.
 
 If there is no problem, the compiler will not say anything.
 
