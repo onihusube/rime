@@ -4,7 +4,7 @@ rime is an extension for `<regex>`.
 
 ## Overview
 
-- Compile time regex patern check
+- Compile time regex pattern check
 - Some utilities for regex
 - Header Only
 - Requires C++20 or later
