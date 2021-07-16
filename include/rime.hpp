@@ -770,7 +770,7 @@ namespace rime {
 namespace rime::ranges {
 
   template<std::ranges::view V, typename CharT = char>
-  class regex_filter_view : std::ranges::view_base<regex_filter_view<V>> {
+  class regex_filter_view : public std::ranges::view_interface<regex_filter_view<V, CharT>> {
     V m_view;
     std::basic_regex<CharT> m_regex;
 
@@ -779,7 +779,7 @@ namespace rime::ranges {
       , m_regex(std::move(regex))
     {}
 
-    
+
   };
 
   template<typename R, typename CharT>
