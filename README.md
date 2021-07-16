@@ -57,7 +57,7 @@ This can be used for `wchar_t` as well.
 
 Use factory function `rime::regex()` to create a `std::regex` from a string.
 
-`rime::regex()` returns `std::regex`.
+`rime::regex(regex_str)` returns `std::regex`.
 
 ```cpp
 #include <iostream>
@@ -92,6 +92,8 @@ This can be used for `wchar_t` as well.
 `rime::regex_searches()` will search the input string for all substrings that match the regular expression pattern.
 
 The return value of `rime::regex_searches()` is a `range` object that represents the entire search result.
+
+If the return type of `rime::regex_searches(str, regex)` is `R`, then `R` is `forward_range` and `viewable_range`.
 
 ```cpp
 #include <iostream>

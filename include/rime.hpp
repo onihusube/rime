@@ -270,7 +270,7 @@ namespace rime {
             }
 
             // それ以外の出現はエラー
-            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
+            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0, a}` ] )_");
           }
 
           // 後半DecimalDigits
@@ -764,6 +764,31 @@ namespace rime {
     using reiter_t = std::regex_iterator<iterator_t<decltype(input_str)>>;
 
     return subrange{reiter_t{begin(input_str), end(input_str), re}, reiter_t{}};
+  }
+}
+
+namespace rime::ranges {
+
+  template<std::ranges::view V, typename CharT = char>
+  class regex_filter_view : std::ranges::view_base<regex_filter_view<V>> {
+    V m_view;
+    std::basic_regex<CharT> m_regex;
+
+    regex_filter_view(V view, std::basic_regex<CharT> regex)
+      : m_view(std::move(view))
+      , m_regex(std::move(regex))
+    {}
+
+    
+  };
+
+  template<typename R, typename CharT>
+  regex_filter_view(R&&, std::basic_regex<CharT>&&) -> regex_filter_view<std::views::all_t<R>, CharT>;
+
+
+
+  namespace views {
+
   }
 }
 
