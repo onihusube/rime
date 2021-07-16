@@ -55,7 +55,7 @@ namespace rime {
   using std::ranges::end;
 
   [[noreturn]]
-  void REGEX_PATERN_ERROR(const char* str) {
+  void REGEX_PATTERN_ERROR(const char* str) {
     throw str;
   }
 
@@ -121,21 +121,21 @@ namespace rime {
   }
 
   template<regex_usable_character CharT>
-  struct patern_check {
+  struct pattern_check {
 
     using chars = character_constant<CharT>;
 
     using I = std::ranges::iterator_t<std::basic_string_view<CharT>>;
     using S = std::ranges::sentinel_t<std::basic_string_view<CharT>>;
 
-    fn start(std::basic_string_view<CharT> patern) {
-      auto it = patern.begin();
-      const auto fin = patern.end();
+    fn start(std::basic_string_view<CharT> pattern) {
+      auto it = pattern.begin();
+      const auto fin = pattern.end();
 
       disjunction(it, fin);
 
       if (it != fin) {
-        REGEX_PATERN_ERROR("Parse error.");
+        REGEX_PATTERN_ERROR("Parse error.");
       }
       // ここにきたらOK
     }
@@ -153,7 +153,7 @@ namespace rime {
         return;
       } else {
         // 構文エラー？
-        REGEX_PATERN_ERROR("The expected '|' did not appear.");
+        REGEX_PATTERN_ERROR("The expected '|' did not appear.");
       }
     }
 
@@ -190,7 +190,7 @@ namespace rime {
           auto next = it + 1;
           if (next == fin) {
             // エスケープシーケンスの不正な終了
-            REGEX_PATERN_ERROR("The escape sequence is empty.");
+            REGEX_PATTERN_ERROR("The escape sequence is empty.");
           }
 
           const auto c2 = *next;
@@ -234,14 +234,14 @@ namespace rime {
           while(true) {
             if (it == fin) {
               // \d{0,10}のようなかっこが閉じていない
-              REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
+              REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
             }
 
             const auto c = *it;
             if (c == chars::comma) {
               if (not follow_digits) {
                 // 数字が現れる前にカンマが現れている
-                REGEX_PATERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{, 2}` ] )_");
+                REGEX_PATTERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{, 2}` ] )_");
               }
               // 後半読み取りへ
               consume(it);
@@ -250,7 +250,7 @@ namespace rime {
             if (c == chars::rbrace) {
               if (not follow_digits) {
                 // 数字が現れる前に閉じている
-                REGEX_PATERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
+                REGEX_PATTERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
               }
               // 数量詞終端
               consume(it);
@@ -270,20 +270,20 @@ namespace rime {
             }
 
             // それ以外の出現はエラー
-            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0, a}` ] )_");
+            REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0, a}` ] )_");
           }
 
           // 後半DecimalDigits
           while(true) {
             if (it == fin) {
               // \d{0,10}のようなかっこが閉じていない
-              REGEX_PATERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
+              REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
             }
 
             const auto c = *it;
             if (c == chars::comma) {
               // 後半にカンマはない
-              REGEX_PATERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0, 10, 2}` ] )");
+              REGEX_PATTERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0, 10, 2}` ] )");
             }
             if (c == chars::rbrace) {
               // 数量詞終端
@@ -303,7 +303,7 @@ namespace rime {
             }
 
             // それ以外の出現はエラー
-            REGEX_PATERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
+            REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
           }
         }
         consume(it);
@@ -338,7 +338,7 @@ namespace rime {
       consume(it);
       if (it == fin) {
         // グループが閉じていない
-        REGEX_PATERN_ERROR("The group is not closed.");
+        REGEX_PATTERN_ERROR("The group is not closed.");
       }
 
       // 先読みアサーションのチェック
@@ -346,14 +346,14 @@ namespace rime {
         consume(it);
         if (it == fin) {
           // グループが閉じていない
-          REGEX_PATERN_ERROR("The group is not closed.");
+          REGEX_PATTERN_ERROR("The group is not closed.");
         }
         const auto c2 = *it;
         if (c2 == chars::colon or c2 == chars::equal or c2 == chars::exclamation) {
           consume(it);
         } else {
           // 有効な先読みアサーションではない
-          REGEX_PATERN_ERROR("You got the wrong Lookahead Assertion.");
+          REGEX_PATTERN_ERROR("You got the wrong Lookahead Assertion.");
         }
       }
 
@@ -361,7 +361,7 @@ namespace rime {
       disjunction(it, fin);
       if (const auto c = *it; c != chars::rparen) {
         // グループが閉じていない
-        REGEX_PATERN_ERROR("The group is not closed.");
+        REGEX_PATTERN_ERROR("The group is not closed.");
       }
       consume(it);
       return;
@@ -389,7 +389,7 @@ namespace rime {
         return;
       } else {
         // ^ $ \ . ( [ ] }
-        REGEX_PATERN_ERROR(R"_(These(any of ^ $ \ . ( [ ] } ) symbols need escaping.)_");
+        REGEX_PATTERN_ERROR(R"_(These(any of ^ $ \ . ( [ ] } ) symbols need escaping.)_");
       }
     }
   
@@ -397,7 +397,7 @@ namespace rime {
       consume(it);
       if (it == fin) {
         // 孤立したバックスラッシュ
-        REGEX_PATERN_ERROR("The last backslash is isolated.");
+        REGEX_PATTERN_ERROR("The last backslash is isolated.");
       }
 
       if (decimal_escape(it, fin) == true) {
@@ -411,7 +411,7 @@ namespace rime {
       }
 
       // ここにきたらエラー？
-      REGEX_PATERN_ERROR("There's an unknown escape sequence.");
+      REGEX_PATTERN_ERROR("There's an unknown escape sequence.");
     }
 
     fn decimal_escape(I& it, const S fin) -> bool {
@@ -437,7 +437,7 @@ namespace rime {
 
       // その次の文字としてDecimalDigitsが現れてはならない
       if (contains(chars::decimal_digits, *it)) {
-        REGEX_PATERN_ERROR("Numeric escape is up to two digits. But, when it starts with 0, it is one digit.");
+        REGEX_PATTERN_ERROR("Numeric escape is up to two digits. But, when it starts with 0, it is one digit.");
       }
 
       return true;
@@ -454,32 +454,32 @@ namespace rime {
       if (c == chars::c) {
         consume(it);
         if (it == fin) {
-          REGEX_PATERN_ERROR(R"_(`\c` is not a valid escape sequence.)_");
+          REGEX_PATTERN_ERROR(R"_(`\c` is not a valid escape sequence.)_");
         }
         if (contains(chars::control_letters, *it)) {
           consume(it);
           return true;
         } else {
-          REGEX_PATERN_ERROR(R"_(`\cn`(n is not character) is not a valid escape sequence.)_");
+          REGEX_PATTERN_ERROR(R"_(`\cn`(n is not character) is not a valid escape sequence.)_");
         }
       }
       // HexEscapeSequence
       if (c == chars::x) {
         consume(it);
         if (it == fin) {
-          REGEX_PATERN_ERROR(R"_(`\x` is not a valid escape sequence.)_");
+          REGEX_PATTERN_ERROR(R"_(`\x` is not a valid escape sequence.)_");
         }
 
         // 16進エスケープシーケンス（\xhh）は2桁必要
         if (not hex_digit(it)) {
-          REGEX_PATERN_ERROR(R"_(`\xn`(n is not hexadecimal number) is a hexadecimal escape sequence that is not valid.)_");
+          REGEX_PATTERN_ERROR(R"_(`\xn`(n is not hexadecimal number) is a hexadecimal escape sequence that is not valid.)_");
         }
         if (it == fin) {
-          REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
+          REGEX_PATTERN_ERROR("Hexadecimal escape sequence must be two digits.");
         }
 
         if (not hex_digit(it)) {
-          REGEX_PATERN_ERROR("Hexadecimal escape sequence must be two digits.");
+          REGEX_PATTERN_ERROR("Hexadecimal escape sequence must be two digits.");
         }
         return true;
       }
@@ -500,14 +500,14 @@ namespace rime {
         consume(it);
         if (it == fin) {
           if (should_return) return false;
-          REGEX_PATERN_ERROR(R"_(`\u` is not a valid escape sequence.)_");
+          REGEX_PATTERN_ERROR(R"_(`\u` is not a valid escape sequence.)_");
         }
 
         // ユニコードエスケープシーケンスは4桁
         for (int i = 4; i --> 0;) {
           if (not hex_digit(it)) {
             if (should_return) return false;
-            REGEX_PATERN_ERROR(R"_(Unicode Escape Sequence(`\uhhhh `) requires 4 hexadecimal digits.)_");
+            REGEX_PATTERN_ERROR(R"_(Unicode Escape Sequence(`\uhhhh `) requires 4 hexadecimal digits.)_");
           }
         }
         return true;
@@ -562,14 +562,14 @@ namespace rime {
       consume(it);
       if (it == fin) {
         // []が閉じていない
-        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
       }
       
       if (*it == chars::caret) {
         consume(it);
         if (it == fin) {
           // []が閉じていない
-          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
       }
 
@@ -580,7 +580,7 @@ namespace rime {
         return;
       } else {
         // []が閉じていない
-        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
       }
     }
 
@@ -596,7 +596,7 @@ namespace rime {
 
       if (it == fin) {
         // []が閉じていない
-        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
       }
       if (*it == chars::rbracket) {
         // 空の場合
@@ -606,7 +606,7 @@ namespace rime {
         consume(it);
         if (it == fin) {
           // []が閉じていない
-          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
         if (*it == chars::rbracket) {
           // ClassAtom NonemptyClassRangesNoDash(ClassAtom)
@@ -616,7 +616,7 @@ namespace rime {
         class_atom(it, fin);
         if (it == fin) {
           // []が閉じていない
-          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
         class_ranges(it, fin);
         return;
@@ -635,7 +635,7 @@ namespace rime {
 
       if (it == fin) {
         // []が閉じていない
-        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
       }
       if (*it == chars::rbracket) {
         // 空の場合
@@ -645,16 +645,16 @@ namespace rime {
         consume(it);
         if (it == fin) {
           // []が閉じていない
-          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
         if (*it == chars::rbracket) {
-          REGEX_PATERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
+          REGEX_PATTERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
         }
         class_atom(it, fin);
 
         if (it == fin) {
           // []が閉じていない
-          REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
         class_ranges(it, fin);
       } else {
@@ -682,7 +682,7 @@ namespace rime {
         return;
       case chars::hyphen: [[fallthrough]];
       case chars::rbracket:
-        REGEX_PATERN_ERROR("Unreachable");
+        REGEX_PATTERN_ERROR("Unreachable");
         break;
       default:
         consume(it);
@@ -695,7 +695,7 @@ namespace rime {
       consume(it);
       if (it == fin) {
         // []が閉じていない
-        REGEX_PATERN_ERROR("The range of character(character class) is not closed.");
+        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
       }
 
       if (*it == chars::b) {
@@ -713,7 +713,7 @@ namespace rime {
       }
 
       // ここにきたらエラー？
-      REGEX_PATERN_ERROR("There's an unknown escape sequence.");
+      REGEX_PATTERN_ERROR("There's an unknown escape sequence.");
     }
   };
 
@@ -721,40 +721,40 @@ namespace rime {
 
     [[nodiscard]]
     consteval auto operator""_re(const char* str, std::size_t len) -> const char* {
-      patern_check<char>::start({str, len});
+      pattern_check<char>::start({str, len});
       return str;
     }
 
     [[nodiscard]]
     consteval auto operator""_re(const wchar_t* str, std::size_t len) -> const wchar_t* {
-      patern_check<wchar_t>::start({str, len});
+      pattern_check<wchar_t>::start({str, len});
       return str;
     }
   }
 
   namespace detail {
     template<typename CharT>
-    struct regex_patern_str {
+    struct regex_pattern_str {
       std::basic_string_view<CharT> str;
 
       template<typename T>
         requires std::convertible_to<const T&, std::basic_string_view<CharT>>
-      consteval regex_patern_str(const T& s)
+      consteval regex_pattern_str(const T& s)
         : str(s)
       {
-        patern_check<CharT>::start(this->str);
+        pattern_check<CharT>::start(this->str);
       }
     };
   }
 
   [[nodiscard]]
-  inline auto regex(detail::regex_patern_str<char> patern) -> std::regex {
-    return std::basic_regex<char>(patern.str.data());
+  inline auto regex(detail::regex_pattern_str<char> pattern) -> std::regex {
+    return std::basic_regex<char>(pattern.str.data());
   }
 
   [[nodiscard]]
-  inline auto regex(detail::regex_patern_str<wchar_t> patern) -> std::wregex {
-    return std::basic_regex<wchar_t>(patern.str.data());
+  inline auto regex(detail::regex_pattern_str<wchar_t> pattern) -> std::wregex {
+    return std::basic_regex<wchar_t>(pattern.str.data());
   }
 
   template<regex_usable_character CharT>

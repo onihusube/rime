@@ -44,23 +44,23 @@ int main() {
     // パースエラーで例外を投げる
     ut::expect(ut::throws([]{ 
       auto pat = R"_(()_"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"_())_"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"(])"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"(})"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
@@ -76,23 +76,23 @@ int main() {
     // パースエラーで例外を投げる
     ut::expect(ut::throws([]{ 
       auto pat = LR"_(()_"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"_())_"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"([)"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"(])"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"(})"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
   };
 
@@ -128,11 +128,11 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"(\)"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = LR"(\)"sv;
-      rime::patern_check<wchar_t>::start(pat);
+      rime::pattern_check<wchar_t>::start(pat);
     }));
   };
 
@@ -181,51 +181,51 @@ int main() {
 
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{   })"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{,})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{ ,  })"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{)"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{  )"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{a})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{12n})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{1, n})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{1, 2, 3})"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{1, 2)"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{1, 2\d+?)"sv;
-        rime::patern_check<char>::start(pat);
+        rime::pattern_check<char>::start(pat);
       }));
     }
   };
@@ -244,11 +244,11 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"((\00))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\123))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
@@ -292,27 +292,27 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"((\x0))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\x9))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\xa))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\xf))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\xF))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\xA))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
@@ -330,23 +330,23 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"((\u))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\u0))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\u0f))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\u0f2))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((\uFED))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
@@ -374,15 +374,15 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"((?a))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((?1))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"((?*))"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
@@ -422,15 +422,15 @@ int main() {
 
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([a-b)"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([a-b0-2A-G)"sv;
-      rime::patern_check<char>::start(pat);
+      rime::pattern_check<char>::start(pat);
     }));
   };
 
