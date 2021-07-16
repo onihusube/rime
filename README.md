@@ -13,7 +13,7 @@ rime is an extension for `<regex>`.
 
 ## Facility
 
-### Compile time regex patern check
+### Compile time regex pattern check
 
 Checks the validity of a regular expression string and raises an Compile Error if it is wrong.
 
