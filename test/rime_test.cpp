@@ -2,6 +2,8 @@
 
 #define RIME_TEST 1
 #include "rime.hpp"
+
+#define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
 
 namespace ut = boost::ut;
@@ -350,6 +352,30 @@ int main() {
     }));
   };
 
+  "character escape"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_(\f\n\r\t\v)_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_(\cA\cZ\ca\cA\z)_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_(\!\"\#\^\$\%\&\'\-\^\=\~\|\@\;\:\*\+\,\.\/\?\_\<\>)_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_(\\abcdef\\\\\\)_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_(\{\(\[)_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_(\}\)\])_"_re;
+
+    ut::expect(ut::throws([] {
+      auto pat = R"((\c))"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([] {
+      auto pat = R"(([\c]))"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+  };
+
   "lookahead assertion or group"_test = [] {
     [[maybe_unused]]
     auto rstr1 = R"_(())_"_re;
@@ -434,6 +460,7 @@ int main() {
     }));
   };
 
+#ifndef _MSC_VER
   "regex_searches"_test = [] {
     const auto regex = rime::regex(R"(\d+)");
     std::string_view expects[] = {"1421", "34353", "7685", "12765", "976754"};
@@ -451,4 +478,5 @@ int main() {
       std::ranges::viewable_range auto r2 = rime::regex_searches("1421, 34353, 7685, 12765, 976754", regex);
     }
   };
+#endif // !_MSC_VER
 }

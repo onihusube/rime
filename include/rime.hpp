@@ -4,6 +4,12 @@
 #include <ranges>
 #include <algorithm>
 
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning(disable : 702)
+#endif // _MSC_VER
+
 #define fn static constexpr auto
 
 namespace rime::detail {
@@ -196,6 +202,11 @@ namespace rime {
           const auto c2 = *next;
           if (c2 == chars::b or c2 == chars::B) {
             // \bの次まで消費
+            consume_n(it, 2);
+            return true;
+          }
+          if (c2 == chars::backslash) {
+            // `\\`を消費
             consume_n(it, 2);
             return true;
           }
@@ -396,17 +407,17 @@ namespace rime {
     fn atom_escape(I& it, const S fin) {
       consume(it);
       if (it == fin) {
-        // 孤立したバックスラッシュ
+        // 孤立したバックスラッシュ（assertionでチェックしてるのでここには来ないのでは・・・？）
         REGEX_PATTERN_ERROR("The last backslash is isolated.");
       }
 
       if (decimal_escape(it, fin) == true) {
         return;
       }
-      if (character_escape(it, fin) == true) {
+      if (character_class_escape(it) == true) {
         return;
       }
-      if (character_class_escape(it) == true) {
+      if (character_escape(it, fin) == true) {
         return;
       }
 
@@ -488,9 +499,12 @@ namespace rime {
         return true;
       }
       // IdentityEscape
-      if (check_identifier_part(it, fin) == true) {
+      if (*it != chars::c) {
+        consume(it);
         return true;
       }
+      // ここに来ることってある？
+      REGEX_PATTERN_ERROR("Unreachable");
 
       return false;
     }
@@ -522,31 +536,6 @@ namespace rime {
 
       consume(it);
       return true;
-    }
-
-    fn check_identifier_part(I& it, const S fin) -> bool {
-      const auto c = *it;
-
-      if (c == chars::backslash) {
-        auto copy_it = it;
-        if (copy_it == fin) {
-          // `\\`はここではok
-          consume(it);
-          return true;
-        }
-
-        if (not unicode_escape_seqence(copy_it, fin, true)) {
-          consume(it);
-          return true;
-        }
-
-        // ユニコードエスケープシーケンスの前に\があった時、どうする？？
-        return false;
-      }
-      // 後のところが未実装、エスケープシーケンス周りが不完全
-      //regex_error_unimplemented();
-
-      return false;
     }
 
     fn character_class_escape(I& it) -> bool {
@@ -705,10 +694,10 @@ namespace rime {
       if (decimal_escape(it, fin) == true) {
         return;
       }
-      if (character_escape(it, fin) == true) {
+      if (character_class_escape(it) == true) {
         return;
       }
-      if (character_class_escape(it) == true) {
+      if (character_escape(it, fin) == true) {
         return;
       }
 
@@ -796,3 +785,7 @@ namespace rime::ranges {
 #ifndef RIME_TEST
 #undef LITERAL
 #endif
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif // _MSC_VER
