@@ -573,23 +573,24 @@ namespace rime {
       }
     }
 
+    // class_atomがどの構文をパースして帰っているのかを伝える
+    enum class class_atom_result : unsigned char { 
+      hyphen_or_posixclass,
+      class_atom_nodash,
+      rbracket
+    };
+
 
     fn class_ranges(I& it, const S fin) {
-      if (*it == chars::rbracket) {
+      // NonemptyClassRanges
+      if (class_atom(it, fin) == class_atom_result::rbracket) {
         // 空の場合
         return;
       }
-
-      // NonemptyClassRanges
-      class_atom(it, fin);
 
       if (it == fin) {
         // []が閉じていない
         REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
-      if (*it == chars::rbracket) {
-        // 空の場合
-        return;
       }
       if (*it == chars::hyphen) {
         consume(it);
@@ -597,12 +598,10 @@ namespace rime {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
-        if (*it == chars::rbracket) {
-          // ClassAtom NonemptyClassRangesNoDash(ClassAtom)
-          // `[\w-]`など
+        if (class_atom(it, fin) == class_atom_result::rbracket) {
+          // 続くClassRangesは空
           return;
         }
-        class_atom(it, fin);
         if (it == fin) {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
@@ -615,20 +614,16 @@ namespace rime {
     }
 
     fn nonempty_class_ranges_nodash(I& it, const S fin) {
-      if (*it == chars::hyphen) {
-        consume(it);
+
+      if (class_atom(it, fin) != class_atom_result::class_atom_nodash) {
+        // - or POSIXクラス、あるいは]を読んで帰ってきた時
         return;
       }
-
-      class_atom_nodash(it, fin);
+      // ClassAtomNoDashを読んだ時
 
       if (it == fin) {
         // []が閉じていない
         REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
-      if (*it == chars::rbracket) {
-        // 空の場合
-        return;
       }
       if (*it == chars::hyphen) {
         consume(it);
@@ -636,11 +631,10 @@ namespace rime {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
-        if (*it == chars::rbracket) {
-          REGEX_PATTERN_ERROR(R"_(The end of range of character is not specified. [Example: `[a-]` ] )_");
+        if (class_atom(it, fin) == class_atom_result::rbracket) {
+          // 続くClassRangesは空
+          return;
         }
-        class_atom(it, fin);
-
         if (it == fin) {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
@@ -651,31 +645,87 @@ namespace rime {
       }
     }
   
-    fn class_atom(I& it, const S fin) {
+    fn class_atom(I& it, const S fin) -> class_atom_result {
       const auto c = *it;
 
       if (c == chars::hyphen) {
         consume(it);
-        return;
+        return class_atom_result::hyphen_or_posixclass;
+      }
+      if (c == chars::lbracket) {
+        // バックトラックの可能性があるためコピーする
+        auto it2 = it;
+
+        consume(it2);
+        if (it2 == fin) {
+          // []が閉じていない
+          REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[` ] )_");
+        }
+
+        switch (*it2) {
+        case chars::colon: [[fallthrough]];
+        case chars::equal: [[fallthrough]];
+        case chars::dot:
+        // POSIXクラス
+        {
+          consume_n(it, 2);
+          if (it == fin) {
+            // []が閉じていない
+            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:` ] )_");
+          }
+
+          class_name(it, fin);
+          if (it == fin) {
+            // []が閉じていない
+            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit` ] )_");
+          }
+
+          // : = .のいずれかを消費
+          consume(it);
+
+          // ]で閉じているはず
+          if (it == fin or *it != chars::rbracket) {
+            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit:` `[[:digit:}]` ] )_");
+          }
+
+          // 1つのPOSIXクラスを終了（]を消費）して戻る
+          consume(it);
+          return class_atom_result::hyphen_or_posixclass;
+        }
+        default:
+          //`[abc[def]]`みたいのは有効
+          break;
+        }
       }
 
-      class_atom_nodash(it, fin);
+      return class_atom_nodash(it, fin);
     }
 
-    fn class_atom_nodash(I& it, const S fin) {
+    fn class_name(I& it, const S fin) {
+       do {
+        const auto c = *it;
+        if (c == chars::colon or c == chars::dot or c == chars::equal) {
+          return;
+        }
+        consume(it);
+       } while (it != fin);
+    }
+
+    fn class_atom_nodash(I& it, const S fin) -> class_atom_result {
       const auto c = *it;
 
       switch (c) {
       case chars::backslash:
         class_escape(it, fin);
-        return;
-      case chars::hyphen: [[fallthrough]];
-      case chars::rbracket:
+        return class_atom_result::class_atom_nodash;
+      case chars::hyphen:
         REGEX_PATTERN_ERROR("Unreachable");
         break;
+      case chars::rbracket:
+        return class_atom_result::rbracket;
       default:
         consume(it);
-        return;
+        return class_atom_result::class_atom_nodash;
       }
     }
   

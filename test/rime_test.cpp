@@ -460,6 +460,48 @@ int main() {
     }));
   };
 
+  "POSIX class"_test = [] {
+    [[maybe_unused]]
+    auto rstr1 = R"_([[:digit:]])_"_re;
+    [[maybe_unused]]
+    auto rstr2 = R"_([^[:digit:]])_"_re;
+    [[maybe_unused]]
+    auto rstr3 = R"_([[:space:]])_"_re;
+    [[maybe_unused]]
+    auto rstr4 = R"_([^[:space:]])_"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"_([_[:alnum:]])_"_re;
+    [[maybe_unused]]
+    auto rstr6 = R"_([^_[:alnum:]])_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_([abcdde[:digit:]])_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_([[:digit:]abdsafjk213])_"_re;
+    //[[maybe_unused]]
+    //auto rstr7 = R"_([abc[def]])_"_re;
+
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a[:digit:]a])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:digit)"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:digit:)"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:digit:])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+  };
+
 #ifndef _MSC_VER
   "regex_searches"_test = [] {
     const auto regex = rime::regex(R"(\d+)");

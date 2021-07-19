@@ -262,3 +262,35 @@ UnicodeDigit
 UnicodeConnectorPunctuation
     any character in the Unicode category “Connector punctuation (Pc)”
 ```
+
+## C++ Modified ECMAScript regular expression grammar
+
+- [N4868 30.12 Modified ECMAScript regular expression grammar [re.grammar]](https://timsong-cpp.github.io/cppwp/n4868/re.grammar)
+
+```cpp
+ClassAtom
+    -
+    ClassAtomNoDash
+    ClassAtomExClass
+    ClassAtomCollatingElement
+    ClassAtomEquivalence
+
+IdentityEscape
+    SourceCharacter but not c
+
+ClassAtomExClass
+    [: ClassName :]
+
+ClassAtomCollatingElement
+    [. ClassName .]
+
+ClassAtomEquivalence
+    [= ClassName =]
+
+ClassName
+    ClassNameCharacter
+    ClassNameCharacter ClassName
+
+ClassNameCharacter
+    SourceCharacter but not one of . or = or :
+```
