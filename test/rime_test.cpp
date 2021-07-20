@@ -477,13 +477,11 @@ int main() {
     auto rstr7 = R"_([abcdde[:digit:]])_"_re;
     [[maybe_unused]]
     auto rstr8 = R"_([[:digit:]abdsafjk213])_"_re;
-    //[[maybe_unused]]
-    //auto rstr7 = R"_([abc[def]])_"_re;
+    [[maybe_unused]]
+    auto rstr9 = R"_([a[:digit:]a])_"_re;
+    [[maybe_unused]]
+    auto rstr10 = R"_([abc[def])_"_re;
 
-    ut::expect(ut::throws([]{ 
-      auto pat = R"([a[:digit:]a])"sv;
-      rime::pattern_check<char>::start(pat);
-    }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([[:])"sv;
       rime::pattern_check<char>::start(pat);

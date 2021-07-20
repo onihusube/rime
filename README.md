@@ -267,30 +267,50 @@ UnicodeConnectorPunctuation
 
 - [N4868 30.12 Modified ECMAScript regular expression grammar [re.grammar]](https://timsong-cpp.github.io/cppwp/n4868/re.grammar)
 
-```cpp
-ClassAtom
+```
+ClassAtom ::
     -
     ClassAtomNoDash
     ClassAtomExClass
     ClassAtomCollatingElement
     ClassAtomEquivalence
 
-IdentityEscape
+IdentityEscape ::
     SourceCharacter but not c
 
-ClassAtomExClass
+ClassAtomExClass ::
     [: ClassName :]
 
-ClassAtomCollatingElement
+ClassAtomCollatingElement ::
     [. ClassName .]
 
-ClassAtomEquivalence
+ClassAtomEquivalence ::
     [= ClassName =]
 
-ClassName
+ClassName ::
     ClassNameCharacter
     ClassNameCharacter ClassName
 
-ClassNameCharacter
+ClassNameCharacter ::
     SourceCharacter but not one of . or = or :
 ```
+
+## More patches with this library
+
+In rime, the grammar are modified according to the implementation (GCC/clang).
+
+```
+ClassAtom ::
+    -
+    ClassAtomNoDash
+
+ClassAtomNoDash ::
+    SourceCharacter but not one of \ ] -
+    \ ClassEscape
+    ClassAtomExClass
+    ClassAtomCollatingElement
+    ClassAtomEquivalence
+```
+
+This will allow patterns like `[abcd[:digit]efgh]` to be allowed.   
+(Under the previous definition, `[abcd[:digit]]` and `[[:digit]abcd]` were valid, but `[abcd[:digit]efgh]` was not allowed.)

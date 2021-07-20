@@ -575,7 +575,7 @@ namespace rime {
 
     // class_atomがどの構文をパースして帰っているのかを伝える
     enum class class_atom_result : unsigned char { 
-      hyphen_or_posixclass,
+      hyphen,
       class_atom_nodash,
       rbracket
     };
@@ -650,65 +650,10 @@ namespace rime {
 
       if (c == chars::hyphen) {
         consume(it);
-        return class_atom_result::hyphen_or_posixclass;
-      }
-      if (c == chars::lbracket) {
-        // バックトラックの可能性があるためコピーする
-        auto it2 = it;
-
-        consume(it2);
-        if (it2 == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[` ] )_");
-        }
-
-        switch (*it2) {
-        case chars::colon: [[fallthrough]];
-        case chars::equal: [[fallthrough]];
-        case chars::dot:
-        // POSIXクラス
-        {
-          consume_n(it, 2);
-          if (it == fin) {
-            // []が閉じていない
-            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:` ] )_");
-          }
-
-          class_name(it, fin);
-          if (it == fin) {
-            // []が閉じていない
-            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit` ] )_");
-          }
-
-          // : = .のいずれかを消費
-          consume(it);
-
-          // ]で閉じているはず
-          if (it == fin or *it != chars::rbracket) {
-            REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit:` `[[:digit:}]` ] )_");
-          }
-
-          // 1つのPOSIXクラスを終了（]を消費）して戻る
-          consume(it);
-          return class_atom_result::hyphen_or_posixclass;
-        }
-        default:
-          //`[abc[def]]`みたいのは有効
-          break;
-        }
+        return class_atom_result::hyphen;
       }
 
       return class_atom_nodash(it, fin);
-    }
-
-    fn class_name(I& it, const S fin) {
-       do {
-        const auto c = *it;
-        if (c == chars::colon or c == chars::dot or c == chars::equal) {
-          return;
-        }
-        consume(it);
-       } while (it != fin);
     }
 
     fn class_atom_nodash(I& it, const S fin) -> class_atom_result {
@@ -723,10 +668,69 @@ namespace rime {
         break;
       case chars::rbracket:
         return class_atom_result::rbracket;
+      case chars::lbracket:
+        if (posix_class(it, fin) == true) {
+          return class_atom_result::class_atom_nodash;
+        }
+        [[fallthrough]];
       default:
         consume(it);
         return class_atom_result::class_atom_nodash;
       }
+    }
+
+    fn posix_class(I& it, const S fin) -> bool {
+      // バックトラックの可能性があるためコピーする
+      auto it2 = it;
+
+      consume(it2);
+      if (it2 == fin) {
+        // []が閉じていない
+        REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[` ] )_");
+      }
+
+      switch (*it2) {
+      case chars::colon: [[fallthrough]];
+      case chars::equal: [[fallthrough]];
+      case chars::dot:
+        // POSIXクラス
+        consume_n(it, 2);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:` ] )_");
+        }
+
+        class_name(it, fin);
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit` ] )_");
+        }
+
+        // : = .のいずれかを消費
+        consume(it);
+
+        // ]で閉じているはず
+        if (it == fin or *it != chars::rbracket) {
+          REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit:` `[[:digit:}]` ] )_");
+        }
+
+        // 1つのPOSIXクラスを終了（]を消費）して戻る
+        consume(it);
+        return true;
+      default:
+        //`[abc[def]`みたいのは有効
+        return false;
+      }
+    }
+
+    fn class_name(I& it, const S fin) {
+      do {
+       const auto c = *it;
+       if (c == chars::colon or c == chars::dot or c == chars::equal) {
+         return;
+       }
+       consume(it);
+      } while (it != fin);
     }
   
     fn class_escape(I& it, const S fin) {
