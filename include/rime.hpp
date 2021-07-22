@@ -239,88 +239,68 @@ namespace rime {
           // { だった時
           consume(it);
 
-          bool follow_digits = false;
-
           // 前半DecimalDigits
-          while(true) {
-            if (it == fin) {
-              // \d{0,10}のようなかっこが閉じていない
-              REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
-            }
+          const auto num_of_digits = decimal_digits(it, fin);
 
-            const auto c = *it;
-            if (c == chars::comma) {
-              if (not follow_digits) {
-                // 数字が現れる前にカンマが現れている
-                REGEX_PATTERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{, 2}` ] )_");
-              }
-              // 後半読み取りへ
-              consume(it);
-              break;
-            }
-            if (c == chars::rbrace) {
-              if (not follow_digits) {
-                // 数字が現れる前に閉じている
-                REGEX_PATTERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
-              }
-              // 数量詞終端
-              consume(it);
-              return;
-            }
-            if (c == chars::space) {
-              // スペースは読み飛ばす
-              consume(it);
-              continue;
-            }
-            // 数字のチェック
-            const bool is_digits = contains(chars::decimal_digits, c);
-            if (is_digits) {
-              follow_digits = true;
-              consume(it);
-              continue;
-            }
-
-            // それ以外の出現はエラー
-            REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0, a}` ] )_");
+          if (it == fin) {
+            // \d{0,10}のようなかっこが閉じていない
+            REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0` ] )_");
           }
+          if (*it == chars::rbrace) {
+            if (num_of_digits == 0) {
+              // 数字が現れる前に閉じている
+              REGEX_PATTERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
+            }
+            // 数量詞終端
+            consume(it);
+            return;
+          }
+          if (*it != chars::comma) {
+            // 数字でもカンマでも閉じかっこでもないものが現れている
+            REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0 }` ] )_");
+          }
+          if (num_of_digits == 0) {
+            // 数字が現れる前にカンマが現れている
+            REGEX_PATTERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{,2}` ] )_");
+          }
+          // カンマを消費
+          consume(it);
 
           // 後半DecimalDigits
-          while(true) {
-            if (it == fin) {
-              // \d{0,10}のようなかっこが閉じていない
-              REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0, 10` ] )_");
-            }
+          decimal_digits(it, fin);
 
-            const auto c = *it;
-            if (c == chars::comma) {
-              // 後半にカンマはない
-              REGEX_PATTERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0, 10, 2}` ] )");
-            }
-            if (c == chars::rbrace) {
-              // 数量詞終端
-              consume(it);
-              return;
-            }
-            if (c == chars::space) {
-              // スペースは読み飛ばす
-              consume(it);
-              continue;
-            }
-            // 数字のチェック
-            const bool is_digits = contains(chars::decimal_digits, c);
-            if (is_digits) {
-              consume(it);
-              continue;
-            }
-
-            // それ以外の出現はエラー
-            REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}` ] )_");
+          if (it == fin) {
+            // \d{0,10}のようなかっこが閉じていない
+            REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0,10` ] )_");
           }
+          if (*it == chars::comma) {
+            // 後半にカンマはない
+            REGEX_PATTERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0,10,2}` ] )");
+          }
+          if (*it == chars::rbrace) {
+            // 数量詞終端
+            consume(it);
+            return;
+          }
+          // それ以外の出現はエラー
+          REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{0, 5}`, `\d{0,@}`, `a{1,a}` ] )_");
+          return;
         }
         consume(it);
       }
       // * + ? { 以外は消費しないで戻る
       return;
+    }
+
+    fn decimal_digits(I& it, const S fin) -> std::size_t {
+      std::size_t count = 0;
+
+      while (it != fin and contains(chars::decimal_digits, *it)) {
+        consume(it);
+        ++count;
+      }
+
+      return count;
     }
 
     fn atom(I& it, const S fin) {
@@ -394,7 +374,6 @@ namespace rime {
       }
 
       // エラーにしない文字は後ろの方で見つかるようにしてある
-      // -1しているのは、文字配列の終端が文字終端'\0'の次の位置であるため
       if (auto t = e - 6; t <= p) {
         // * + ? { | )
         return;

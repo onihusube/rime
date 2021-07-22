@@ -167,20 +167,24 @@ int main() {
       [[maybe_unused]]
       auto rstr1 = R"(a{2})"_re;
       [[maybe_unused]]
-      auto rstr2 = R"(a{2, 3})"_re;
+      auto rstr2 = R"(a{2,3})"_re;
       [[maybe_unused]]
-      auto rstr3 = R"(a{     2     })"_re;
+      auto rstr3 = R"(a{2,})"_re;
       [[maybe_unused]]
-      auto rstr4 = R"(a{2, })"_re;
+      auto rstr4 = R"(a{1234567890})"_re;
       [[maybe_unused]]
-      auto rstr5 = R"(a{ 2 }?)"_re;
+      auto rstr5 = R"(a{0}?)"_re;
       [[maybe_unused]]
-      auto rstr6 = R"(a{1234567890})"_re;
-      [[maybe_unused]]
-      auto rstr7 = R"(a{0})"_re;
-      [[maybe_unused]]
-      auto rstr8 = R"(a{1234567890, 1234567890})"_re;
+      auto rstr6 = R"(a{1234567890,1234567891})"_re;
 
+      ut::expect(ut::throws([] {
+        auto pat = R"(a{     2     })"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([] {
+        auto pat = R"(a{ 2 }?)"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{})"sv;
         rime::pattern_check<char>::start(pat);
@@ -214,19 +218,19 @@ int main() {
         rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
-        auto pat = R"(a{1, n})"sv;
+        auto pat = R"(a{1,n})"sv;
         rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
-        auto pat = R"(a{1, 2, 3})"sv;
+        auto pat = R"(a{1,2,3})"sv;
         rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
-        auto pat = R"(a{1, 2)"sv;
+        auto pat = R"(a{1,2)"sv;
         rime::pattern_check<char>::start(pat);
       }));
       ut::expect(ut::throws([]{ 
-        auto pat = R"(a{1, 2\d+?)"sv;
+        auto pat = R"(a{1,2\d+?)"sv;
         rime::pattern_check<char>::start(pat);
       }));
     }
