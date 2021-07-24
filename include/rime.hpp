@@ -414,29 +414,14 @@ namespace rime {
       if (const auto d1 = *it; d1 == chars::decimal_digits[0]) {
         // \0 の時は1桁オンリー
         consume(it);
-      } else if (contains(chars::decimal_digits, d1)) {
-        // \n (n != 0)の時は2桁ok
-        consume(it);
-        if (it == fin) return true;
-        if (contains(chars::decimal_digits, *it)) {
-          consume(it);
-        } else {
-          // 1桁数値エスケープ
-          return true;
-        }
-      } else {
-        // 数値が現れない場合は別のエスケープ文字
-        return false;
+        return true;
+      }
+      if (0 < decimal_digits(it, fin)) {
+        return true;
       }
 
-      if (it == fin) return true;
-
-      // その次の文字としてDecimalDigitsが現れてはならない
-      if (contains(chars::decimal_digits, *it)) {
-        REGEX_PATTERN_ERROR("Numeric escape is up to two digits. But, when it starts with 0, it is one digit.");
-      }
-
-      return true;
+      // 数値が現れない場合は別のエスケープ文字
+      return false;
     }
 
     fn character_escape(I& it, const S fin) -> bool {

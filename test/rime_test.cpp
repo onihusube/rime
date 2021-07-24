@@ -273,15 +273,14 @@ int main() {
     auto rstr4 = R"_(\10)_"_re;
     [[maybe_unused]]
     auto rstr5 = R"_(\99)_"_re;
-
-    ut::expect(ut::throws([]{ 
-      auto pat = R"((\00))"sv;
-      rime::pattern_check<char>::start(pat);
-    }));
-    ut::expect(ut::throws([]{ 
-      auto pat = R"((\123))"sv;
-      rime::pattern_check<char>::start(pat);
-    }));
+    [[maybe_unused]]
+    auto rstr6 = R"_(\100)_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_(\9999)_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_(\1234567890)_"_re;
+    //[[maybe_unused]]
+    //auto rstr7 = R"_(R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\100)_"_re;
   };
 
   "character class escape"_test = [] {
