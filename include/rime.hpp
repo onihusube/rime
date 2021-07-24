@@ -569,11 +569,8 @@ namespace rime {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
-        class_ranges(it, fin);
-        return;
-      } else {
-        class_ranges(it, fin);
       }
+      class_ranges(it, fin);
     }
 
     fn class_atom(I& it, const S fin) -> class_atom_result {
