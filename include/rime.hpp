@@ -572,44 +572,10 @@ namespace rime {
         class_ranges(it, fin);
         return;
       } else {
-        nonempty_class_ranges_nodash(it, fin);
-      }
-    }
-
-    fn nonempty_class_ranges_nodash(I& it, const S fin) {
-
-      // 呼び出される前に chars::hyphen じゃない事をチェックしているので
-      // ここでは class_atom_result::hyphen は返ってこない
-      if (class_atom(it, fin) == class_atom_result::rbracket) {
-        // - or POSIXクラス、あるいは]を読んで帰ってきた時
-        return;
-      }
-      // ClassAtomNoDashを読んだ時
-
-      if (it == fin) {
-        // []が閉じていない
-        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
-      if (*it == chars::hyphen) {
-        consume(it);
-        if (it == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-        }
-        if (class_atom(it, fin) == class_atom_result::rbracket) {
-          // 続くClassRangesは空
-          return;
-        }
-        if (it == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-        }
         class_ranges(it, fin);
-      } else {
-        nonempty_class_ranges_nodash(it, fin);
       }
     }
-  
+
     fn class_atom(I& it, const S fin) -> class_atom_result {
       const auto c = *it;
 
