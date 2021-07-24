@@ -517,14 +517,7 @@ namespace rime {
       }
 
       class_ranges(it, fin);
-
-      if (*it == chars::rbracket) {
-        consume(it);
-        return;
-      } else {
-        // []が閉じていない
-        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
+      consume(it);
     }
 
     // class_atomがどの構文をパースして帰っているのかを伝える
