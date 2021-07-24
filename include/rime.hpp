@@ -545,32 +545,33 @@ namespace rime {
 
 
     fn class_ranges(I& it, const S fin) {
-      // NonemptyClassRanges
-      if (class_atom(it, fin) == class_atom_result::rbracket) {
-        // 空の場合
-        return;
-      }
-
-      if (it == fin) {
-        // []が閉じていない
-        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
-      if (*it == chars::hyphen) {
-        consume(it);
-        if (it == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-        }
+      for (;;) {
+        // NonemptyClassRanges
         if (class_atom(it, fin) == class_atom_result::rbracket) {
-          // 続くClassRangesは空
+          // 空の場合
           return;
         }
+
         if (it == fin) {
           // []が閉じていない
           REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
         }
+        if (*it == chars::hyphen) {
+          consume(it);
+          if (it == fin) {
+            // []が閉じていない
+            REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
+          }
+          if (class_atom(it, fin) == class_atom_result::rbracket) {
+            // 続くClassRangesは空
+            return;
+          }
+          if (it == fin) {
+            // []が閉じていない
+            REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
+          }
+        }
       }
-      class_ranges(it, fin);
     }
 
     fn class_atom(I& it, const S fin) -> class_atom_result {
