@@ -512,12 +512,7 @@ namespace rime {
 
     fn character_class(I& it, const S fin) {
       consume(it);
-      if (it == fin) {
-        // []が閉じていない
-        REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-      }
-      
-      if (*it == chars::caret) {
+      if (it != fin and *it == chars::caret) {
         consume(it);
       }
 
@@ -548,11 +543,7 @@ namespace rime {
           return;
         }
 
-        if (it == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-        }
-        if (*it == chars::hyphen) {
+        if (it != fin and *it == chars::hyphen) {
           consume(it);
           if (class_atom(it, fin) == class_atom_result::rbracket) {
             // 続くClassRangesは空
