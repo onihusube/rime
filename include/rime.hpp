@@ -522,8 +522,7 @@ namespace rime {
 
     // class_atomがどの構文をパースして帰っているのかを伝える
     enum class class_atom_result : unsigned char { 
-      hyphen,
-      class_atom_nodash,
+      other,
       rbracket
     };
 
@@ -557,20 +556,17 @@ namespace rime {
       switch (c) {
       case chars::backslash:
         class_escape(it, fin);
-        return class_atom_result::class_atom_nodash;
-      case chars::hyphen:
-        consume(it);
-        return class_atom_result::hyphen;
+        return class_atom_result::other;
       case chars::rbracket:
         return class_atom_result::rbracket;
       case chars::lbracket:
         if (posix_class(it, fin) == true) {
-          return class_atom_result::class_atom_nodash;
+          return class_atom_result::other;
         }
         [[fallthrough]];
       default:
         consume(it);
-        return class_atom_result::class_atom_nodash;
+        return class_atom_result::other;
       }
     }
 
