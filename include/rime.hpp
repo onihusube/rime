@@ -519,10 +519,6 @@ namespace rime {
       
       if (*it == chars::caret) {
         consume(it);
-        if (it == fin) {
-          // []が閉じていない
-          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
-        }
       }
 
       class_ranges(it, fin);
