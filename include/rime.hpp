@@ -547,6 +547,10 @@ namespace rime {
     fn class_ranges(I& it, const S fin) {
       for (;;) {
         // NonemptyClassRanges
+        if (it == fin) {
+          // []が閉じていない
+          REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
+        }
         if (class_atom(it, fin) == class_atom_result::rbracket) {
           // 空の場合
           return;
@@ -565,10 +569,6 @@ namespace rime {
           if (class_atom(it, fin) == class_atom_result::rbracket) {
             // 続くClassRangesは空
             return;
-          }
-          if (it == fin) {
-            // []が閉じていない
-            REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
           }
         }
       }
