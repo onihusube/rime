@@ -578,7 +578,9 @@ namespace rime {
 
     fn nonempty_class_ranges_nodash(I& it, const S fin) {
 
-      if (class_atom(it, fin) != class_atom_result::class_atom_nodash) {
+      // 呼び出される前に chars::hyphen じゃない事をチェックしているので
+      // ここでは class_atom_result::hyphen は返ってこない
+      if (class_atom(it, fin) == class_atom_result::rbracket) {
         // - or POSIXクラス、あるいは]を読んで帰ってきた時
         return;
       }
