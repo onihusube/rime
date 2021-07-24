@@ -147,7 +147,20 @@ namespace rime {
     }
 
     static constexpr void disjunction(I& it, const S fin) {
-      alternative(it, fin);
+      // Alternative
+      while (it != fin) {
+        const auto c = *it;
+        if (c == chars::bitwise_or or c == chars::rparen) break;
+
+        // Term
+        if (assertion(it, fin) == false) {
+          atom(it, fin);
+
+          if (it != fin) {
+            quantifier(it, fin);
+          }
+        }
+      }
 
       if (it == fin) return;
 
@@ -158,28 +171,8 @@ namespace rime {
         // 先読みアサーションとグループ内のパース時にdisjunctionを終了する
         return;
       } else {
-        // 構文エラー？
+        // ここくる？
         REGEX_PATTERN_ERROR("The expected '|' did not appear.");
-      }
-    }
-
-    fn alternative(I& it, const S fin) {
-      while (it != fin) {
-        const auto c = *it;
-        if (c == chars::bitwise_or or c == chars::rparen) return;
-        term(it, fin);
-      }
-    }
-
-    fn term(I& it, const S fin) {
-      if (assertion(it, fin) == true) {
-        return;
-      } else {
-        atom(it, fin);
-
-        if (it != fin) {
-          quantifier(it, fin);
-        }
       }
     }
 
