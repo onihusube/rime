@@ -554,24 +554,13 @@ namespace rime {
 
       const auto c = *it;
 
-      if (c == chars::hyphen) {
-        consume(it);
-        return class_atom_result::hyphen;
-      }
-
-      return class_atom_nodash(it, fin);
-    }
-
-    fn class_atom_nodash(I& it, const S fin) -> class_atom_result {
-      const auto c = *it;
-
       switch (c) {
       case chars::backslash:
         class_escape(it, fin);
         return class_atom_result::class_atom_nodash;
       case chars::hyphen:
-        REGEX_PATTERN_ERROR("Unreachable");
-        break;
+        consume(it);
+        return class_atom_result::hyphen;
       case chars::rbracket:
         return class_atom_result::rbracket;
       case chars::lbracket:
