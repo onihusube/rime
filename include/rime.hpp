@@ -360,7 +360,8 @@ namespace rime {
 
     fn pattern_character(I& it) {
       // ^ $ \ . * + ? ( ) [ ] { } | を除いた1文字
-      // * + ? { | ) => 消費せずに戻る
+      // | ) => 消費せずに戻る
+      // * + ? { => エラー（Quantifierの開始文字）
       // ^ $ \ . ( [ ] } => エラー
       // othewise => 消費して戻る
 
@@ -374,9 +375,14 @@ namespace rime {
       }
 
       // エラーにしない文字は後ろの方で見つかるようにしてある
-      if (auto t = e - 6; t <= p) {
-        // * + ? { | )
+      if (auto t = e - 2; t <= p) {
+        // | )
         return;
+      }
+      if (auto t = e - 6; t <= p) {
+        // * + ? {
+        // 単独の（Atomに続かない）Quantifier
+        REGEX_PATTERN_ERROR(R"_(The Quantifier must come after some character (or character class, etc.). [Example: `*`, `+`, `?`, `{2}` ])_");
       } else {
         // ^ $ \ . ( [ ] }
         REGEX_PATTERN_ERROR(R"_(These(any of ^ $ \ . ( [ ] } ) symbols need escaping.)_");

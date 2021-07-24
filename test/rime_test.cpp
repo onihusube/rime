@@ -107,6 +107,14 @@ int main() {
     auto rstr3 = R"(a|b|c)"_re;
     [[maybe_unused]]
     auto rstr4 = LR"(a|b|c)"_re;
+    [[maybe_unused]]
+    auto rstr5 = R"(|)"_re;
+    [[maybe_unused]]
+    auto rstr6 = LR"(|)"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"((a|b)|(c|d))"_re;
+    [[maybe_unused]]
+    auto rstr8 = LR"((a|b)|(c|d))"_re;
   };
 
   "alternative"_test = []{
@@ -162,6 +170,24 @@ int main() {
       auto rstr4 = LR"(a+?)"_re;
       [[maybe_unused]]
       auto rstr5 = LR"(a*?)"_re;
+    }
+    {
+      ut::expect(ut::throws([] {
+        auto pat = R"(*)"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([] {
+        auto pat = R"(?)"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([] {
+        auto pat = R"(+)"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([] {
+        auto pat = R"({1})"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
     }
     {
       [[maybe_unused]]
