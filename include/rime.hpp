@@ -521,7 +521,7 @@ namespace rime {
     }
 
     // class_atomがどの構文をパースして帰っているのかを伝える
-    enum class class_atom_result : unsigned char { 
+    enum class class_atom_result : bool {
       other,
       rbracket
     };
