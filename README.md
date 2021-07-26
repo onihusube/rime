@@ -312,5 +312,5 @@ ClassAtomNoDash ::
     ClassAtomEquivalence
 ```
 
-This will allow patterns like `[abcd[:digit]efgh]` to be allowed.   
-(Under the previous definition, `[abcd[:digit]]` and `[[:digit]abcd]` were valid, but `[abcd[:digit]efgh]` was not allowed.)
+This will allow patterns like `[abcd[:digit:]efgh]` to be allowed.   
+(Under the previous definition, `[abcd[:digit:]]` and `[[:digit:]abcd]` were valid, but `[abcd[:digit:]efgh]` was not allowed.)
