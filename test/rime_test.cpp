@@ -394,6 +394,12 @@ int main() {
     auto rstr5 = R"_(\{\(\[)_"_re;
     [[maybe_unused]]
     auto rstr6 = R"_(\}\)\])_"_re;
+    [[maybe_unused]]
+    auto rstr7 = R"_(\\*)_"_re;
+    [[maybe_unused]]
+    auto rstr8 = R"_(\\+)_"_re;
+    [[maybe_unused]]
+    auto rstr9 = R"_(\\{0,10})_"_re;
 
     ut::expect(ut::throws([] {
       auto pat = R"((\c))"sv;

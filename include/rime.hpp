@@ -198,11 +198,11 @@ namespace rime {
             consume_n(it, 2);
             return true;
           }
-          if (c2 == chars::backslash) {
+          /*if (c2 == chars::backslash) {
             // `\\`を消費
             consume_n(it, 2);
             return true;
-          }
+          }*/
         }
         [[fallthrough]];
       default:
