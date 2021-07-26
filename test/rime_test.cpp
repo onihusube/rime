@@ -473,7 +473,13 @@ int main() {
     [[maybe_unused]]
     auto rstr15 = R"_([-\w+])_"_re;
     [[maybe_unused]]
-    auto rstr16 = R"_([\w\b\0\12\f\n\r\t\v\d\D\s\S\w\W])_"_re;
+    auto rstr16 = R"_([\w\b\0\f\n\r\t\v\d\D\s\S\w\W])_"_re;
+    [[maybe_unused]]
+    auto rstr17 = R"_([\w-])_"_re;
+    [[maybe_unused]]
+    auto rstr18 = R"_([abcA-Ze-k4-8])_"_re;
+    [[maybe_unused]]
+    auto rstr19 = R"_([-])_"_re;
 
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
@@ -485,6 +491,18 @@ int main() {
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([a-b0-2A-G)"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\1])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\99])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\10])"sv;
       rime::pattern_check<char>::start(pat);
     }));
   };

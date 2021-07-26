@@ -381,6 +381,13 @@ namespace rime {
         REGEX_PATTERN_ERROR(R"_(These(any of ^ $ \ . ( [ ] } ) symbols need escaping.)_");
       }
     }
+
+    // DecimalEscapeの種類を伝える
+    enum class decimal_escape_result : unsigned char {
+      null_char,
+      back_ref,
+      reject
+    };
   
     fn atom_escape(I& it, const S fin) {
       consume(it);
@@ -389,7 +396,7 @@ namespace rime {
         REGEX_PATTERN_ERROR("The last backslash is isolated.");
       }
 
-      if (decimal_escape(it, fin) == true) {
+      if (decimal_escape(it, fin) != decimal_escape_result::reject) {
         return;
       }
       if (character_class_escape(it) == true) {
@@ -403,18 +410,18 @@ namespace rime {
       REGEX_PATTERN_ERROR("There's an unknown escape sequence.");
     }
 
-    fn decimal_escape(I& it, const S fin) -> bool {
+    fn decimal_escape(I& it, const S fin) -> decimal_escape_result {
       if (const auto d1 = *it; d1 == chars::decimal_digits[0]) {
         // \0 の時は1桁オンリー
         consume(it);
-        return true;
+        return decimal_escape_result::null_char;
       }
       if (0 < decimal_digits(it, fin)) {
-        return true;
+        return decimal_escape_result::back_ref;
       }
 
       // 数値が現れない場合は別のエスケープ文字
-      return false;
+      return decimal_escape_result::reject;
     }
 
     fn character_escape(I& it, const S fin) -> bool {
@@ -646,8 +653,12 @@ namespace rime {
         consume(it);
         return;
       }
-      if (decimal_escape(it, fin) == true) {
-        return;
+      if (const auto dec_escape_kind = decimal_escape(it, fin); dec_escape_kind != decimal_escape_result::reject) {
+        if (dec_escape_kind == decimal_escape_result::null_char) {
+          return;
+        }
+        // DecimalEscapeの後方参照は禁止
+        REGEX_PATTERN_ERROR("You cannot refer to a capture group in [].");
       }
       if (character_class_escape(it) == true) {
         return;
