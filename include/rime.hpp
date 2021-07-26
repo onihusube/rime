@@ -584,6 +584,7 @@ namespace rime {
       case chars::colon: [[fallthrough]];
       case chars::equal: [[fallthrough]];
       case chars::dot:
+      {
         // POSIXクラス
         consume_n(it, 2);
         if (it == fin) {
@@ -591,14 +592,22 @@ namespace rime {
           REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:` ] )_");
         }
 
+        // 導入子（: = .）を保存
+        const auto introducer = *it2;
+
         class_name(it, fin);
         if (it == fin) {
           // []が閉じていない
           REGEX_PATTERN_ERROR(R"_(The POSIX class is not closed. [Example: `[[:digit` ] )_");
         }
 
-        // : = .のいずれかを消費
-        consume(it);
+        // POSIXクラス導入と終了が一貫していることをチェック
+        if (*it == introducer) {
+          // : = .のいずれかを消費
+          consume(it);
+        } else {
+          REGEX_PATTERN_ERROR(R"_(POSIX class introduction characters are inconsistent. [Example: `[:digit=]`, `[=upper.]`, `[.space:]` ] )_");
+        }
 
         // ]で閉じているはず
         if (it == fin or *it != chars::rbracket) {
@@ -608,6 +617,7 @@ namespace rime {
         // 1つのPOSIXクラスを終了（]を消費）して戻る
         consume(it);
         return true;
+      }
       default:
         //`[abc[def]`みたいのは有効
         return false;

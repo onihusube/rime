@@ -527,6 +527,30 @@ int main() {
       auto pat = R"([[:digit:])"sv;
       rime::pattern_check<char>::start(pat);
     }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:upper.]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:digit=]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[.space:]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[.space=]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[=upper.]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[=upper:]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
   };
 
 #ifndef _MSC_VER
