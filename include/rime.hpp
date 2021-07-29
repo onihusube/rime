@@ -528,31 +528,47 @@ namespace rime {
     }
 
     // class_atomがどの構文をパースして帰っているのかを伝える
-    enum class class_atom_result : bool {
-      other,
-      rbracket
+    enum class class_atom_result : unsigned char {
+      rbracket,
+      one_char,
+      char_set
     };
 
 
     fn class_ranges(I& it, const S fin) {
       for (;;) {
+        // 文字範囲の最初と最後の文字を数字にして保持する
+        class_atom_result first_kind{}, last_kind{};
+        std::size_t first = 0, last = 0;
+
         // NonemptyClassRanges
-        if (class_atom(it, fin) == class_atom_result::rbracket) {
+        if (std::tie(first_kind, first) = class_atom(it, fin); first_kind == class_atom_result::rbracket) {
           // 空の場合
           return;
         }
 
         if (it != fin and *it == chars::hyphen) {
           consume(it);
-          if (class_atom(it, fin) == class_atom_result::rbracket) {
+          if (std::tie(last_kind, last) = class_atom(it, fin); last_kind == class_atom_result::rbracket) {
             // 続くClassRangesは空
             return;
+          }
+
+          // 文字範囲の妥当性チェック
+          if (first_kind == class_atom_result::one_char and last_kind == class_atom_result::one_char) {
+            if (not (first <= last)) {
+              REGEX_PATTERN_ERROR(R"_(Invalid range in character class. [Example: `[z-a]`, `[5-2]` ])_");
+            }
+            continue;
+          } else {
+            // 文字範囲の開始と終端はそれぞれ1文字を示すものでなければならない
+            REGEX_PATTERN_ERROR(R"_(The start and end of range of character(character class) must be specified to indicate a single character. [Example: `[\w-a]`, `[\s-\d]` ])_");
           }
         }
       }
     }
 
-    fn class_atom(I& it, const S fin) -> class_atom_result {
+    fn class_atom(I& it, const S fin) -> std::pair<class_atom_result, std::size_t> {
       if (it == fin) {
         // []が閉じていない
         REGEX_PATTERN_ERROR("The range of character(character class) is not closed.");
@@ -562,18 +578,20 @@ namespace rime {
 
       switch (c) {
       case chars::backslash:
-        class_escape(it, fin);
-        return class_atom_result::other;
+        {
+          auto esc_kind = class_escape(it, fin);
+          return {esc_kind, 0}; // エスケープ文字のデコードが必要
+        }
       case chars::rbracket:
-        return class_atom_result::rbracket;
+        return {class_atom_result::rbracket, 0};
       case chars::lbracket:
         if (posix_class(it, fin) == true) {
-          return class_atom_result::other;
+          return {class_atom_result::char_set, 0};
         }
         [[fallthrough]];
       default:
         consume(it);
-        return class_atom_result::other;
+        return {class_atom_result::one_char, std::size_t(c)};
       }
     }
 
@@ -641,7 +659,7 @@ namespace rime {
       } while (it != fin);
     }
   
-    fn class_escape(I& it, const S fin) {
+    fn class_escape(I& it, const S fin) -> class_atom_result {
       // バックスラッシュを消費
       consume(it);
       if (it == fin) {
@@ -651,20 +669,20 @@ namespace rime {
 
       if (*it == chars::b) {
         consume(it);
-        return;
+        return class_atom_result::char_set;
       }
       if (const auto dec_escape_kind = decimal_escape(it, fin); dec_escape_kind != decimal_escape_result::reject) {
         if (dec_escape_kind == decimal_escape_result::null_char) {
-          return;
+          return class_atom_result::one_char;
         }
         // DecimalEscapeの後方参照は禁止
         REGEX_PATTERN_ERROR("You cannot refer to a capture group in [].");
       }
       if (character_class_escape(it) == true) {
-        return;
+        return class_atom_result::char_set;
       }
       if (character_escape(it, fin) == true) {
-        return;
+        return class_atom_result::one_char;
       }
 
       // ここにきたらエラー？

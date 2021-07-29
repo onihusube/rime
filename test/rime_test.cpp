@@ -486,6 +486,10 @@ int main() {
     auto rstr18 = R"_([abcA-Ze-k4-8])_"_re;
     [[maybe_unused]]
     auto rstr19 = R"_([-])_"_re;
+    [[maybe_unused]]
+    auto rstr20 = R"_([0-0])_"_re;
+    [[maybe_unused]]
+    auto rstr21 = R"_([a-a])_"_re;
 
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
@@ -509,6 +513,30 @@ int main() {
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([\10])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([1-0])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([9-0])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([b-a])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([z-a])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a-[:digit:]])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([[:digit:]-9])"sv;
       rime::pattern_check<char>::start(pat);
     }));
   };
