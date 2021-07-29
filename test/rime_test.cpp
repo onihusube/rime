@@ -539,6 +539,22 @@ int main() {
       auto pat = R"([[:digit:]-9])"sv;
       rime::pattern_check<char>::start(pat);
     }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a-\s])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\w-z])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([a-\b])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\b-9])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
   };
 
   "POSIX class"_test = [] {
