@@ -388,6 +388,18 @@ namespace rime {
       back_ref,
       reject
     };
+
+    enum class class_escape_result : unsigned char {
+      reject,
+      decimal,
+      b,
+      control,
+      control_letter,
+      hex,
+      unicode,
+      identity,
+      character_class
+    };
   
     fn atom_escape(I& it, const S fin) {
       consume(it);
@@ -402,7 +414,7 @@ namespace rime {
       if (character_class_escape(it) == true) {
         return;
       }
-      if (character_escape(it, fin) == true) {
+      if (character_escape(it, fin) != class_escape_result::reject) {
         return;
       }
 
@@ -424,12 +436,12 @@ namespace rime {
       return decimal_escape_result::reject;
     }
 
-    fn character_escape(I& it, const S fin) -> bool {
+    fn character_escape(I& it, const S fin) -> class_escape_result {
       const auto c = *it;
       // ControlEscape
       if (contains(chars::control_escapes, *it)) {
         consume(it);
-        return true;
+        return class_escape_result::control;
       }
       // c ControlLetter
       if (c == chars::c) {
@@ -439,7 +451,7 @@ namespace rime {
         }
         if (contains(chars::control_letters, *it)) {
           consume(it);
-          return true;
+          return class_escape_result::control_letter;
         } else {
           REGEX_PATTERN_ERROR(R"_(`\cn`(n is not character) is not a valid escape sequence.)_");
         }
@@ -462,21 +474,21 @@ namespace rime {
         if (not hex_digit(it)) {
           REGEX_PATTERN_ERROR("Hexadecimal escape sequence must be two digits.");
         }
-        return true;
+        return class_escape_result::hex;
       }
       // UnicodeEscapeSequence
       if (unicode_escape_seqence(it, fin) == true) {
-        return true;
+        return class_escape_result::unicode;
       }
       // IdentityEscape
       if (*it != chars::c) {
         consume(it);
-        return true;
+        return class_escape_result::identity;
       }
       // ここに来ることってある？
       REGEX_PATTERN_ERROR("Unreachable");
 
-      return false;
+      return class_escape_result::reject;
     }
     
     fn unicode_escape_seqence(I& it, const S fin, bool should_return = false) -> bool {
@@ -579,8 +591,34 @@ namespace rime {
       switch (c) {
       case chars::backslash:
         {
-          auto esc_kind = class_escape(it, fin);
-          return {esc_kind, 0}; // エスケープ文字のデコードが必要
+          // デコードに使用するためにコピーしておく
+          auto it2 = it;
+          // エラーになっていなければ、バックスラッシュの次の文字へ移動
+          consume(it2);
+
+          const auto esc_kind = class_escape(it, fin);
+
+          switch (esc_kind) {
+          case class_escape_result::decimal :
+            // ClassRangeの中のDecimalEscapeは\0のみ
+            return {class_atom_result::one_char, 0};
+          case class_escape_result::control :
+            // \f \n \r \t \v
+            return {class_atom_result::one_char, 0};
+          case class_escape_result::control_letter :
+            // \c の後にアルファベット1文字
+            consume(it2);
+            return {class_atom_result::one_char, std::size_t(*it2)};
+          case class_escape_result::hex :
+            return {class_atom_result::one_char, 0};
+          case class_escape_result::unicode :
+            return {class_atom_result::one_char, 0};
+          case class_escape_result::identity :
+            // バックスラッシュの後に任意の1文字
+            return {class_atom_result::one_char, std::size_t(*it2)};
+          default:
+            return {class_atom_result::char_set, 0};
+          }
         }
       case chars::rbracket:
         return {class_atom_result::rbracket, 0};
@@ -659,7 +697,7 @@ namespace rime {
       } while (it != fin);
     }
   
-    fn class_escape(I& it, const S fin) -> class_atom_result {
+    fn class_escape(I& it, const S fin) -> class_escape_result {
       // バックスラッシュを消費
       consume(it);
       if (it == fin) {
@@ -669,20 +707,20 @@ namespace rime {
 
       if (*it == chars::b) {
         consume(it);
-        return class_atom_result::char_set;
+        return class_escape_result::b;
       }
       if (const auto dec_escape_kind = decimal_escape(it, fin); dec_escape_kind != decimal_escape_result::reject) {
         if (dec_escape_kind == decimal_escape_result::null_char) {
-          return class_atom_result::one_char;
+          return class_escape_result::decimal;
         }
         // DecimalEscapeの後方参照は禁止
         REGEX_PATTERN_ERROR("You cannot refer to a capture group in [].");
       }
       if (character_class_escape(it) == true) {
-        return class_atom_result::char_set;
+        return class_escape_result::character_class;
       }
-      if (character_escape(it, fin) == true) {
-        return class_atom_result::one_char;
+      if (const auto char_escape_kind = character_escape(it, fin); char_escape_kind != class_escape_result::reject) {
+        return char_escape_kind;
       }
 
       // ここにきたらエラー？
