@@ -496,6 +496,10 @@ int main() {
     auto rstr23 = R"_([\ca-\cA])_"_re;
     [[maybe_unused]]
     auto rstr24 = R"_([\cA-\cb])_"_re;
+    [[maybe_unused]]
+    auto rstr25 = R"_([\t-\r])_"_re;
+    [[maybe_unused]]
+    auto rstr26 = R"_([\t-\n\n-\v\v-\f\f-\r])_"_re;
 
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
@@ -563,6 +567,26 @@ int main() {
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([\cz-\cA])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\r-\t])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\n-\t])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\v-\n])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\f-\v])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\r-\f])"sv;
       rime::pattern_check<char>::start(pat);
     }));
   };

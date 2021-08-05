@@ -3,7 +3,7 @@
 #include <regex>
 #include <ranges>
 #include <algorithm>
-
+#include <cassert>
 
 #ifdef _MSC_VER
 #pragma warning( push )
@@ -107,7 +107,7 @@ namespace rime {
     static constexpr CArray hex_digits = LITERAL(CharT, "0123456789abcdefABCDEF");
     static constexpr CArray not_pattern_characters = LITERAL(CharT, R"_(^$\.([]}*+?{|))_");
     static constexpr CArray character_class_escapes = LITERAL(CharT, "dDsSwW");
-    static constexpr CArray control_escapes = LITERAL(CharT, "fnrtv");
+    static constexpr CArray control_escapes = LITERAL(CharT, "tnvfr");
     static constexpr CArray control_letters = LITERAL(CharT, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
   };
 
@@ -696,7 +696,7 @@ namespace rime {
         switch (esc_kind) {
         case character_escape_result::control :
           // \f \n \r \t \v
-          return {class_atom_result::one_char, 0};
+          return {class_atom_result::one_char, decode_control(*it2)};
         case character_escape_result::control_letter :
           // \c の後にアルファベット1文字
           // キャレット記法によってASCII制御文字にマッチする
@@ -718,9 +718,29 @@ namespace rime {
       REGEX_PATTERN_ERROR("There's an unknown escape sequence.");
     }
 
+    fn decode_control(CharT c) -> std::size_t {
+      // control_escapesでの位置を求める
+      // tnvfrの順で並んでいる
+      auto it = std::ranges::find(chars::control_escapes, c);
+
+      // 引っかかったら来るまでにバグってる
+      assert(it != end(chars::control_escapes));
+
+      // 先頭からの距離を求める
+      std::integral auto n = std::ranges::distance(begin(chars::control_escapes), it);
+
+      // tnvfrの順でAsciiコードとしても連続して並んでいて
+      // \t = 9なので、先頭からの相対位置に9を足す
+      return std::size_t(n) + 9u;
+    }
+
     fn decode_caret_notation(CharT c) -> std::size_t {
       // chars::control_lettersでの位置を求める
       auto it = std::ranges::find(chars::control_letters, c);
+
+      // 引っかかったら来るまでにバグってる
+      assert(it != end(chars::control_letters));
+
       // 先頭からの距離を求める
       std::integral auto n = std::ranges::distance(begin(chars::control_letters), it);
 
