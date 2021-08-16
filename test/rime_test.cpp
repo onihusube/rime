@@ -202,6 +202,8 @@ int main() {
       auto rstr5 = R"(a{0}?)"_re;
       [[maybe_unused]]
       auto rstr6 = R"(a{1234567890,1234567891})"_re;
+      [[maybe_unused]]
+      auto rstr7 = R"(a{1,1})"_re;
 
       ut::expect(ut::throws([] {
         auto pat = R"(a{     2     })"sv;
@@ -257,6 +259,18 @@ int main() {
       }));
       ut::expect(ut::throws([]{ 
         auto pat = R"(a{1,2\d+?)"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([]{ 
+        auto pat = R"(a{2,1})"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([]{ 
+        auto pat = R"(a{9,0})"sv;
+        rime::pattern_check<char>::start(pat);
+      }));
+      ut::expect(ut::throws([]{ 
+        auto pat = R"(a{9,8})"sv;
         rime::pattern_check<char>::start(pat);
       }));
     }

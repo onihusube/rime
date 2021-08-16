@@ -126,6 +126,11 @@ namespace rime {
     return std::ranges::any_of(std::forward<R>(r), [&value](const auto& v) { return v == value; });
   }
 
+  template<std::ranges::input_range R, std::equality_comparable_with<std::ranges::range_reference_t<R>> T>
+  constexpr auto char_to_num(R&& r, const T& value) -> std::size_t {
+    return std::ranges::distance(begin(r), std::ranges::find(r, value));
+  }
+
   template<regex_usable_character CharT>
   struct pattern_check {
 
@@ -232,15 +237,16 @@ namespace rime {
           // { だった時
           consume(it);
 
+          auto copy_it = it;
           // 前半DecimalDigits
-          const auto num_of_digits = decimal_digits(it, fin);
+          const auto num_of_digits_l = decimal_digits(it, fin);
 
           if (it == fin) {
             // \d{0,10}のようなかっこが閉じていない
             REGEX_PATTERN_ERROR(R"_(Quantifiers braces are not closed. [Example: `\d{0` ] )_");
           }
           if (*it == chars::rbrace) {
-            if (num_of_digits == 0) {
+            if (num_of_digits_l == 0) {
               // 数字が現れる前に閉じている
               REGEX_PATTERN_ERROR(R"_(Quantifiers must have at least one number. [Example: `\d{}` ] )_");
             }
@@ -252,15 +258,20 @@ namespace rime {
             // 数字でもカンマでも閉じかっこでもないものが現れている
             REGEX_PATTERN_ERROR(R"_(You can't use anything but numbers within Quantifiers. [Example: `\d{@}`, `a{a}`, `\d{0 }` ] )_");
           }
-          if (num_of_digits == 0) {
+          if (num_of_digits_l == 0) {
             // 数字が現れる前にカンマが現れている
             REGEX_PATTERN_ERROR(R"_(Within Quantifiers, you need a digits before the ','. [Example: `\d{,2}` ] )_");
           }
+          
+          // 左側の数字を取得
+          std::size_t l = decode_decimal_digits(copy_it, it, num_of_digits_l);
+          
           // カンマを消費
           consume(it);
 
+          copy_it = it;
           // 後半DecimalDigits
-          decimal_digits(it, fin);
+          const auto num_of_digits_r = decimal_digits(it, fin);
 
           if (it == fin) {
             // \d{0,10}のようなかっこが閉じていない
@@ -271,6 +282,17 @@ namespace rime {
             REGEX_PATTERN_ERROR(R"(A ',' can appear only once in Quantifiers. [Example: `\d{0,10,2}` ] )");
           }
           if (*it == chars::rbrace) {
+            // 後半に数字がある場合、範囲チェックを行う（`a{0,}`のような場合はスキップする）
+            if (it != copy_it) {
+              // 右側の数字を取得
+              std::size_t r = decode_decimal_digits(copy_it, it, num_of_digits_r);
+
+              if (not (l <= r)) {
+                // 数値範囲が逆転している
+                REGEX_PATTERN_ERROR(R"_(Invalid range in Quantifiers. [Example: `\d{5,2}`, `a{1,0}` ])_");
+              }
+            }
+
             // 数量詞終端
             consume(it);
             return;
@@ -294,6 +316,24 @@ namespace rime {
       }
 
       return count;
+    }
+
+    fn decode_decimal_digits(I it, const S fin, int num_of_digits) -> std::size_t {
+      std::size_t coeff = 1;
+      for (int i = num_of_digits; i --> 0; ) {
+        coeff *= 10;
+      }
+
+      std::size_t val = 0;
+
+      do {
+        std::size_t n = char_to_num(chars::decimal_digits, *it);
+        val += n * coeff;
+        coeff /= 10;
+        ++it;
+      } while (it != fin);
+
+      return val;
     }
 
     fn atom(I& it, const S fin) {
@@ -725,13 +765,8 @@ namespace rime {
     fn decode_control(CharT c) -> std::size_t {
       // control_escapesでの位置を求める
       // tnvfrの順で並んでいる
-      auto it = std::ranges::find(chars::control_escapes, c);
-
-      // 引っかかったら来るまでにバグってる
-      assert(it != end(chars::control_escapes));
-
       // 先頭からの距離を求める
-      std::integral auto n = std::ranges::distance(begin(chars::control_escapes), it);
+      std::size_t n = char_to_num(chars::control_escapes, c);
 
       // tnvfrの順でAsciiコードとしても連続して並んでいて
       // \t = 9なので、先頭からの相対位置に9を足す
@@ -739,14 +774,8 @@ namespace rime {
     }
 
     fn decode_caret_notation(CharT c) -> std::size_t {
-      // chars::control_lettersでの位置を求める
-      auto it = std::ranges::find(chars::control_letters, c);
-
-      // 引っかかったら来るまでにバグってる
-      assert(it != end(chars::control_letters));
-
-      // 先頭からの距離を求める
-      std::integral auto n = std::ranges::distance(begin(chars::control_letters), it);
+      // chars::control_lettersでの位置を求め先頭からの距離を求める
+      std::size_t n = char_to_num(chars::control_letters, c);
 
       // 大文字なら25を引く事で小文字と一貫させる
       if (std::cmp_less(25, n)) n -= 25;
@@ -767,9 +796,7 @@ namespace rime {
 
       do {
         // chars::hex_digitsでの位置を求める
-        auto p = std::ranges::find(chars::hex_digits, *it);
-        // 先頭からの距離を求める
-        std::integral auto n = std::ranges::distance(begin(chars::hex_digits), p);
+        std::size_t n = char_to_num(chars::hex_digits, *it);
 
         // 大文字なら6を引く事で小文字と一貫させる
         if (16 <= n) n -= 6;
