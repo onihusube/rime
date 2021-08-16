@@ -703,9 +703,13 @@ namespace rime {
           consume(it2);
           return {class_atom_result::one_char, decode_caret_notation(*it2)};
         case character_escape_result::hex :
-          return {class_atom_result::one_char, 0};
+          // 16進エスケープ、\xhh
+          consume(it2);
+          return {class_atom_result::one_char, decode_hex_digits(it2, it, false)};
         case character_escape_result::unicode :
-          return {class_atom_result::one_char, 0};
+          // ユニコードエスケープ、\uhhhh
+          consume(it2);
+          return {class_atom_result::one_char, decode_hex_digits(it2, it, true)};
         case character_escape_result::identity :
           // バックスラッシュの後に任意の1文字
           return {class_atom_result::one_char, std::size_t(*it2)};
@@ -750,6 +754,32 @@ namespace rime {
       // 先頭からの相対位置（0始まり）が制御文字のコードに対応する
       // 0始まりなので+1する
       return std::size_t(n) + 1u;
+    }
+
+    fn decode_hex_digits(I it, const S fin, bool is_unicode_escs) -> std::size_t {
+      std::size_t coeff = 16 * 16;
+      if (is_unicode_escs) {
+        // ユニコードエスケープシーケンスは4桁
+        coeff *= 16 * 16;
+      }
+
+      std::size_t val = 0;
+
+      do {
+        // chars::hex_digitsでの位置を求める
+        auto p = std::ranges::find(chars::hex_digits, *it);
+        // 先頭からの距離を求める
+        std::integral auto n = std::ranges::distance(begin(chars::hex_digits), p);
+
+        // 大文字なら6を引く事で小文字と一貫させる
+        if (16 <= n) n -= 6;
+
+        val += n * coeff;
+        coeff /= 16;
+        ++it;
+      } while (it != fin);
+
+      return val;
     }
   };
 

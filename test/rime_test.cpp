@@ -500,6 +500,24 @@ int main() {
     auto rstr25 = R"_([\t-\r])_"_re;
     [[maybe_unused]]
     auto rstr26 = R"_([\t-\n\n-\v\v-\f\f-\r])_"_re;
+    [[maybe_unused]]
+    auto rstr27 = R"_([\x00-\xff])_"_re;
+    [[maybe_unused]]
+    auto rstr28 = R"_([\xAa-\xFf])_"_re;
+    [[maybe_unused]]
+    auto rstr29 = R"_([\x0a-\x0A])_"_re;
+    [[maybe_unused]]
+    auto rstr30 = R"_([\x0F-\x0f])_"_re;
+    [[maybe_unused]]
+    auto rstr31 = R"_([\u0000-\uFfFf])_"_re;
+    [[maybe_unused]]
+    auto rstr32 = R"_([\u0900-\u0a00])_"_re;
+    [[maybe_unused]]
+    auto rstr33 = R"_([\u9000-\uA000])_"_re;
+    [[maybe_unused]]
+    auto rstr34 = R"_([\u0A00-\u0f00])_"_re;
+    [[maybe_unused]]
+    auto rstr35 = R"_([\ua000-\uF000])_"_re;
 
     ut::expect(ut::throws([]{ 
       auto pat = R"([)"sv;
@@ -587,6 +605,46 @@ int main() {
     }));
     ut::expect(ut::throws([]{ 
       auto pat = R"([\r-\f])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\x0F-\x00])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\x0f-\x0D])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\x0a-\x09])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\x10-\x0F])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\xF0-\xAF])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\xF0-\xAF])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\uff00-\uFE00])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\uFf00-\uEf00])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\u0a00-\u0900])"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"([\uA000-\u9000])"sv;
       rime::pattern_check<char>::start(pat);
     }));
   };
