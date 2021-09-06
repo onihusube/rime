@@ -276,28 +276,99 @@ int main() {
     }
   };
 
+  "decode_decimal_digits"_test = [] {
+    using namespace std::ranges;
+    using C = rime::pattern_check<char>;
+
+    {
+      constexpr auto str = "1"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 1_ll);
+    }
+    {
+      constexpr auto str = "9"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 9_ll);
+    }
+    {
+      constexpr auto str = "10"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 10_ll);
+    }
+    {
+      constexpr auto str = "11"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 11_ll);
+    }
+    {
+      constexpr auto str = "100"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 100_ll);
+    }
+    {
+      constexpr auto str = "999"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), end(str));
+      ut::expect(n == 999_ll);
+    }
+    {
+      constexpr auto str = "12738"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), begin(str) + 3);
+      ut::expect(n == 127_ll);
+    }
+    {
+      constexpr auto str = "12738"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), begin(str) + 4);
+      ut::expect(n == 1273_ll);
+    }
+    {
+      constexpr auto str = "12738"sv;
+      constexpr std::size_t n = C::decode_decimal_digits(begin(str), begin(str) + 1);
+      ut::expect(n == 1_ll);
+    }
+  };
+
   "decimal escape"_test = [] {
     [[maybe_unused]]
     auto rstr1 = R"_(\0)_"_re;
     [[maybe_unused]]
-    auto rstr2 = R"_(\1)_"_re;
+    auto rstr2 = R"_(()\1)_"_re;
     [[maybe_unused]]
-    auto rstr3 = R"_(\9)_"_re;
+    auto rstr3 = R"_(((((((((()))))))))\9)_"_re;
     [[maybe_unused]]
-    auto rstr4 = R"_(\10)_"_re;
+    auto rstr4 = R"_((((((((((())))))))))\10)_"_re;
     [[maybe_unused]]
-    auto rstr5 = R"_(\99)_"_re;
+    auto rstr5 = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\99)_"_re;
     [[maybe_unused]]
-    auto rstr6 = R"_(\100)_"_re;
+    auto rstr6 = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\100)_"_re;
     [[maybe_unused]]
-    auto rstr7 = R"_(\9999)_"_re;
-    [[maybe_unused]]
-    auto rstr8 = R"_(\1234567890)_"_re;
-    [[maybe_unused]]
-    auto rstr9 = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\100)_"_re;
+    auto rstr7 = R"_(((\2(((\5((((\9()\10))))\10)))))\10)_"_re;
+      
+    ut::expect(ut::throws([]{ 
+      auto pat = R"_(\1)_"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+      
+    ut::expect(ut::throws([]{ 
+      auto pat = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\101)_"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+      
+    ut::expect(ut::throws([]{ 
+      auto pat = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\101)_"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\9999)_"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
+    ut::expect(ut::throws([]{ 
+      auto pat = R"_(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((.))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\1234567890)_"sv;
+      rime::pattern_check<char>::start(pat);
+    }));
   };
 
-  "character class escape"_test = [] {
+  "character class escape"_test = []
+  {
     [[maybe_unused]]
     auto rstr1 = R"_(\d)_"_re;
     [[maybe_unused]]

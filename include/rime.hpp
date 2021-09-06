@@ -143,7 +143,11 @@ namespace rime {
       auto it = pattern.begin();
       const auto fin = pattern.end();
 
-      disjunction(it, fin);
+      // キャプチャグループをカウントするための共有状態変数
+      // キャプチャグループは開き括弧`(`で導入される（閉じ括弧は気にしないでいい）
+      std::size_t capture_group_count = 0;
+
+      disjunction(it, fin, capture_group_count);
 
       if (it != fin) {
         REGEX_PATTERN_ERROR("Parse error.");
@@ -151,7 +155,7 @@ namespace rime {
       // ここにきたらOK
     }
 
-    static constexpr void disjunction(I& it, const S fin) {
+    static constexpr void disjunction(I& it, const S fin, std::size_t& capture_group_count) {
       // Alternative
       while (it != fin) {
         const auto c = *it;
@@ -159,7 +163,7 @@ namespace rime {
 
         // Term
         if (assertion(it, fin) == false) {
-          atom(it, fin);
+          atom(it, fin, capture_group_count);
 
           if (it != fin) {
             quantifier(it, fin);
@@ -171,7 +175,7 @@ namespace rime {
 
       if (const auto c = *it; c == chars::bitwise_or) {
         consume(it);
-        return disjunction(it, fin);
+        return disjunction(it, fin, capture_group_count);
       } else if (c == chars::rparen) {
         // 先読みアサーションとグループ内のパース時にdisjunctionを終了する
         return;
@@ -336,7 +340,7 @@ namespace rime {
       return val;
     }
 
-    fn atom(I& it, const S fin) {
+    fn atom(I& it, const S fin, std::size_t& capture_group_count) {
       const auto c = *it;
 
       switch (c) {
@@ -344,13 +348,14 @@ namespace rime {
         consume(it);
         return;
       case chars::backslash:
-        atom_escape(it, fin);
+        atom_escape(it, fin, capture_group_count);
         return;
       case chars::lbracket:
         character_class(it, fin);
         return;
       case chars::lparen:
-        lookahead_assertion_or_group(it, fin);
+        ++capture_group_count;
+        lookahead_assertion_or_group(it, fin, capture_group_count);
         return;
       default:
         pattern_character(it);
@@ -358,7 +363,7 @@ namespace rime {
       }
     }
 
-    fn lookahead_assertion_or_group(I &it, const S fin) {
+    fn lookahead_assertion_or_group(I &it, const S fin, std::size_t& capture_group_count) {
       consume(it);
       if (it == fin) {
         // グループが閉じていない
@@ -382,7 +387,7 @@ namespace rime {
       }
 
       // グループとして一括処理
-      disjunction(it, fin);
+      disjunction(it, fin, capture_group_count);
       if (const auto c = *it; c != chars::rparen) {
         // グループが閉じていない
         REGEX_PATTERN_ERROR("The group is not closed.");
@@ -438,14 +443,25 @@ namespace rime {
       identity
     };
   
-    fn atom_escape(I& it, const S fin) {
+    fn atom_escape(I& it, const S fin, std::size_t& capture_group_count) {
       consume(it);
       if (it == fin) {
         // 孤立したバックスラッシュ（assertionでチェックしてるのでここには来ないのでは・・・？）
         REGEX_PATTERN_ERROR("The last backslash is isolated.");
       }
 
-      if (decimal_escape(it, fin) != decimal_escape_result::reject) {
+      // decimal escapeデコードのためにコピー
+      auto it2 = it;
+      if (auto dec_esc_cat = decimal_escape(it, fin); dec_esc_cat != decimal_escape_result::reject) {
+        // \0は多分後方参照じゃない
+        if (dec_esc_cat != decimal_escape_result::null_char) {
+          const auto backref_index = decode_decimal_digits(it2, it);
+
+          if (capture_group_count < backref_index) {
+            // キャプチャグループ参照が出現しているものよりも大きい
+            REGEX_PATTERN_ERROR("The index of the back reference must be less than or equal to the current number of capture groups.");
+          }
+        }
         return;
       }
       if (character_class_escape(it) == true) {
@@ -723,7 +739,7 @@ namespace rime {
           return {class_atom_result::one_char, 0};
         }
         // DecimalEscapeの後方参照は禁止
-        REGEX_PATTERN_ERROR("You cannot refer to a capture group in [].");
+        REGEX_PATTERN_ERROR("You cannot back reference in [].");
       }
       if (character_class_escape(it) == true) {
         return {class_atom_result::char_set, 0};
@@ -805,6 +821,25 @@ namespace rime {
         coeff /= 16;
         ++it;
       } while (it != fin);
+
+      return val;
+    }
+
+    template <std::bidirectional_iterator I>
+    fn decode_decimal_digits(I it, I fin) -> std::size_t {
+      std::size_t coeff = 1;
+      std::size_t val = 0;
+
+      for (const auto n : std::ranges::subrange{it, fin} | std::views::reverse
+                                                         | std::views::transform([](auto c) { return char_to_num(chars::decimal_digits, c); }))
+      {
+        // 見つからないということはないはず・・・
+        assert(n < 10);
+        // chars::decimal_digitsでの位置 = 数値
+        val += coeff * n;
+        // decimal escape文字列の後ろから見ていくので係数は1, 10, 100...のように増加
+        coeff *= 10;
+      }
 
       return val;
     }
