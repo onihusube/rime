@@ -9,5 +9,5 @@ jobs:
     - name: run test in docker
       uses: onihusube/gcc-meson-docker-action@v6
       with:
-        name: 'harmony'
-        uri: 'https://github.com/onihusube/harmony.git'
+        name: 'rime'
+        uri: 'https://github.com/onihusube/rime.git'
