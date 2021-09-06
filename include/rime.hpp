@@ -268,14 +268,14 @@ namespace rime {
           }
           
           // 左側の数字を取得
-          std::size_t l = decode_decimal_digits(copy_it, it, num_of_digits_l);
+          std::size_t l = decode_decimal_digits(copy_it, it);
           
           // カンマを消費
           consume(it);
 
           copy_it = it;
           // 後半DecimalDigits
-          const auto num_of_digits_r = decimal_digits(it, fin);
+          decimal_digits(it, fin);
 
           if (it == fin) {
             // \d{0,10}のようなかっこが閉じていない
@@ -289,7 +289,7 @@ namespace rime {
             // 後半に数字がある場合、範囲チェックを行う（`a{0,}`のような場合はスキップする）
             if (it != copy_it) {
               // 右側の数字を取得
-              std::size_t r = decode_decimal_digits(copy_it, it, num_of_digits_r);
+              std::size_t r = decode_decimal_digits(copy_it, it);
 
               if (not (l <= r)) {
                 // 数値範囲が逆転している
@@ -320,24 +320,6 @@ namespace rime {
       }
 
       return count;
-    }
-
-    fn decode_decimal_digits(I it, const S fin, int num_of_digits) -> std::size_t {
-      std::size_t coeff = 1;
-      for (int i = num_of_digits; i --> 0; ) {
-        coeff *= 10;
-      }
-
-      std::size_t val = 0;
-
-      do {
-        std::size_t n = char_to_num(chars::decimal_digits, *it);
-        val += n * coeff;
-        coeff /= 10;
-        ++it;
-      } while (it != fin);
-
-      return val;
     }
 
     fn atom(I& it, const S fin, std::size_t& capture_group_count) {
