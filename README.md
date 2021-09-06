@@ -1,3 +1,6 @@
+[![Test by GCC latest](https://github.com/onihusube/rime/actions/workflows/gcc.yml/badge.svg)](https://github.com/onihusube/rime/actions/workflows/gcc.yml)
+[![Test by MSVC](https://github.com/onihusube/rime/actions/workflows/msvc.yml/badge.svg)](https://github.com/onihusube/rime/actions/workflows/msvc.yml)
+
 # rime
 
 rime is an extension for `<regex>`.
