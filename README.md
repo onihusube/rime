@@ -13,6 +13,7 @@ rime is an extension for `<regex>`.
 - Requires C++20 or later
     - GCC 11.1 or later
     - MSVC 2019 Preview latest or later
+        - However, the current MSVC has a problem with `consteval` constructor, so some tests are disabled
 
 ## Facility
 
