@@ -361,6 +361,10 @@ namespace rime {
         }
         const auto c2 = *it;
         if (c2 == chars::colon or c2 == chars::equal or c2 == chars::exclamation) {
+          if (c2 == chars::colon) {
+            // (?:~)のグループはカウントしない
+            --capture_group_count;
+          }
           consume(it);
         } else {
           // 有効な先読みアサーションではない
